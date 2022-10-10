@@ -1,9 +1,9 @@
 version: "3"
 
 services:
-    client:
+    webserv:
         image: nginx
         ports:
             - 80:80
         volumes:
-            - ./src:/usr/share/nginx/html
+            - ./www:/usr/share/nginx/html
