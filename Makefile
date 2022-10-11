@@ -1,9 +1,10 @@
 Name = webserv
-src = 	./src/Clinet.cpp\
-		./src/IOMultiplexing.cpp\
+src = 	./src/IOMultiplexing.cpp\
 		./src/Request.cpp\
 		./src/Response.cpp\
 		./src/Socket.cpp\
+		./src/Server.cpp\
+		./src/Client.cpp\
 
 main = webserv.cpp
 obj = $(src:.cpp=.o)

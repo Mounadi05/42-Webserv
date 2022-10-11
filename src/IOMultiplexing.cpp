@@ -5,10 +5,10 @@ IOMultiplexing::IOMultiplexing() {
     FD_ZERO(&_cpy_readFDs);
     FD_ZERO(&_writeFDs);
     FD_ZERO(&_cpy_writeFDs);
-    _timeOutVal.tv_sec = 0;
+    _timeOutVal.tv_sec = 5;
     _timeOutVal.tv_usec = 0;
     _maxFD = 0;
-    _selectRet = 0;
+    _selectRet = -2;
 }
 
 IOMultiplexing::IOMultiplexing(const IOMultiplexing &io) {

@@ -11,10 +11,14 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <fstream>
-#include "Client.hpp"
 #include "Response.hpp"
 #include "Request.hpp"
 #include "Socket.hpp"
+#include "Server.hpp"
 #include "IOMultiplexing.hpp"
+#include "Client.hpp"
+#include "Config.hpp"
+#include <map>
+#include <vector>
 
 #endif

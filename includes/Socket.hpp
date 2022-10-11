@@ -14,7 +14,7 @@
 
 class Socket{
     public:
-    sockaddr_in _socket;
+    sockaddr_in _socket_in;
     int _fd;
     Socket();
     Socket(const Socket &so);

@@ -4,6 +4,7 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Socket.hpp"
+#include <vector>
 
 class Client {
     private :
