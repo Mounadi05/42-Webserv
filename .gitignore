@@ -32,14 +32,5 @@ webserv
 *.app
 
 # videos
-/www/*.mp4
-/www/*.avi
-/www/*.mkv
-/www/*.mov
-/www/*.flv
-/www/*.wmv
-/www/*.mpg
-/www/*.mpeg
-/www/*.m4v
-/www/*.webm
+
 
