@@ -17,27 +17,39 @@ int main ()
     int up = open("www/up.html",O_RDONLY);
     int js = open("www/index.js",O_RDONLY);
     int fdserver,fdclient;
-    sockaddr_in client,server;
+    sockaddr_in client,server,server1;
     int sr;
+    // server
     fdserver = socket(AF_INET,SOCK_STREAM,0);
     bzero(&server,sizeof(server));
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(1010);
+    //server 1
+    int fdserver1 = socket(AF_INET,SOCK_STREAM,0);
+    bzero(&server1,sizeof(server1));
+    server1.sin_family = AF_INET;
+    server1.sin_addr.s_addr = htonl(INADDR_ANY);
+    server1.sin_port = htons(1212);
     int t = 1;
     setsockopt(fdserver,SOL_SOCKET,SO_REUSEADDR,(char *)&t,sizeof(t));
+    setsockopt(fdserver1,SOL_SOCKET,SO_REUSEADDR,(char *)&t,sizeof(t));
     setsockopt(fdserver,SOL_SOCKET,SO_NOSIGPIPE,(char *)&t,sizeof(t));
     if (bind(fdserver,(sockaddr *)&server,sizeof(server)) == -1)
         std::cout << "bind port "<< ntohs(server.sin_port) << " failed!" << std::endl;
+    if (bind(fdserver1,(sockaddr *)&server1,sizeof(server1)) == -1)
+        std::cout << "bind port "<< ntohs(server1.sin_port) << " failed!" << std::endl;
     listen(fdserver,SOMAXCONN);
+    listen(fdserver1,SOMAXCONN);
     fd_set FdsToRead;
     fd_set cpyFdsToWrite;
     fd_set cpyFdsToRead;
     fd_set FdsToWrite;
     FD_ZERO(&FdsToRead);
     FD_SET(fdserver,&FdsToRead);
+    FD_SET(fdserver1,&FdsToRead);
     int max;
-    max = fdserver;
+    max = fdserver1;
     socklen_t cl;
     timeval tv;
     tv.tv_sec = 3;
@@ -73,13 +85,24 @@ int main ()
             {
                 if(FD_ISSET(i, &cpyFdsToRead))
                 {
-                    if (i == fdserver)
+                    if (i == fdserver || i == fdserver1)
                     {
-                        fdclient = accept(fdserver,(sockaddr *)&client,&cl);
-                        if (fdclient > max)
-                            max = fdclient;
-                        FD_SET(fdclient, &FdsToRead);
-                        std::cout << "new connection from " << fdclient <<std::endl;
+                        if (i == fdserver)
+                        {
+                            fdclient = accept(fdserver,(sockaddr *)&client,&cl);
+                            if (fdclient > max)
+                                max = fdclient;
+                            FD_SET(fdclient, &FdsToRead);
+                            std::cout << "new connection from " << fdclient <<std::endl;
+                        }
+                        else
+                        {
+                            fdclient = accept(fdserver1,(sockaddr *)&client,&cl);
+                            if (fdclient > max)
+                                max = fdclient;
+                            FD_SET(fdclient, &FdsToRead);
+                            std::cout << "new connection from " << fdclient <<std::endl;
+                        }
                     }
                     else
                     {
@@ -104,17 +127,17 @@ int main ()
                                  FD_CLR(i,&FdsToRead);
                                 std::cout << "clear " << i << " from read" << std::endl;
                             }
-                            else if (std::string(request).find("GET /amy.mp4 HTTP/1.1",0) != -1)
-                            {
-                                std::cout << "new Reaquest from " << i <<std::endl;
-                                std::cout << "check amy " << i <<std::endl;
-                                std::cout << request << std::endl;
-                                 flag[i] = 2;
-                                 FD_SET(i, &FdsToWrite);
-                                std::cout << "set " << i << " to write" << std::endl; 
-                                 FD_CLR(i,&FdsToRead);
-                                std::cout << "clear " << i << " from read" << std::endl;
-                            }
+                            // else if (std::string(request).find("GET /amy.mp4 HTTP/1.1",0) != -1)
+                            // {
+                            //     std::cout << "new Reaquest from " << i <<std::endl;
+                            //     std::cout << "check amy " << i <<std::endl;
+                            //     std::cout << request << std::endl;
+                            //      flag[i] = 2;
+                            //      FD_SET(i, &FdsToWrite);
+                            //     std::cout << "set " << i << " to write" << std::endl; 
+                            //      FD_CLR(i,&FdsToRead);
+                            //     std::cout << "clear " << i << " from read" << std::endl;
+                            // }
                             else if (std::string(request).find("GET / HTTP/1.1",0) != -1)
                             {
                                 std::cout << "new Reaquest from " << i <<std::endl;
@@ -137,17 +160,17 @@ int main ()
                                  FD_CLR(i,&FdsToRead);
                                 std::cout << "clear " << i << " from read" << std::endl;
                             }
-                            else if (std::string(request).find("GET /index.js HTTP/1.1",0) != -1)
-                            {
-                                std::cout << "new Reaquest from " << i <<std::endl;
-                                std::cout << "check index.js " << i <<std::endl;;
-                                std::cout << request << std::endl;
-                                flag[i] = 5;
-                                  FD_SET(i, &FdsToWrite);
-                                std::cout << "set " << i << " to write" << std::endl; 
-                                 FD_CLR(i,&FdsToRead);
-                                std::cout << "clear " << i << " from read" << std::endl;
-                            }
+                            // else if (std::string(request).find("GET /index.js HTTP/1.1",0) != -1)
+                            // {
+                            //     std::cout << "new Reaquest from " << i <<std::endl;
+                            //     std::cout << "check index.js " << i <<std::endl;;
+                            //     std::cout << request << std::endl;
+                            //     flag[i] = 5;
+                            //       FD_SET(i, &FdsToWrite);
+                            //     std::cout << "set " << i << " to write" << std::endl; 
+                            //      FD_CLR(i,&FdsToRead);
+                            //     std::cout << "clear " << i << " from read" << std::endl;
+                            // }
                         }
                         else
                             FD_SET(i, &FdsToRead);

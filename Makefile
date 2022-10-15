@@ -1,15 +1,14 @@
 Name = webserv
-src = 	./src/IOMultiplexing.cpp\
-		./src/Request.cpp\
-		./src/Response.cpp\
-		./src/Socket.cpp\
-		./src/Server.cpp\
-		./src/Client.cpp\
+src = 	./srcs/parsing/Config.cpp\
+		./srcs/parsing/Server.cpp\
+		./srcs/parsing/Location.cpp\
+		./srcs/parsing/Socket.cpp\
+		./srcs/networking/IOMultiplexing.cpp\
 
 main = webserv.cpp
 obj = $(src:.cpp=.o)
 
-CPP = c++ -Wall -Wextra -Werror -std=c++98
+CPP = c++ -Wall -Wextra -Werror -std=c++98 -fsanitize=address  -g
 
 $(Name): $(obj)
 	$(CPP) $(main) -o $(Name) $(obj)
