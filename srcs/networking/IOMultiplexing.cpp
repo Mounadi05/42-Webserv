@@ -83,11 +83,11 @@ void IOMultiplexing::setFdMax(int fd)
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
 {
     fd_set readcpy, writecpy;
-    sockaddr_in clinet;
     int fd_client;
     struct timeval vl;
     vl.tv_sec = 3;
     vl.tv_usec = 0;
+
     while (1)
     {
         readcpy = io.fdread;
@@ -102,30 +102,50 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             continue;
         else
         {
-            for (int i = 0; i < io._fdmax + 1; i++)
+            int maxfdserver = 0;
+            for (size_t j = 0; j < servers.size(); j++)
             {
-                if (FD_ISSET(i, &readcpy))
+                int fdserver = servers[j].getSocket().getSocketFd();
+                if (FD_ISSET(fdserver, &readcpy))
                 {
-                    for (size_t j = 0; j < servers.size(); j++)
+                    fd_client = accept(fdserver, NULL, NULL);
+                    std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
+                    io.setFdRead(fd_client);
+                    if (fd_client > io._fdmax)
+                        io._fdmax = fd_client;
+                }
+                maxfdserver = fdserver;
+            }
+            for (int i = maxfdserver + 1; i < io._fdmax + 1; i++)
+            {
+                if (FD_ISSET(i, &readcpy)) //request
+                {
+                    char request[1024];
+                    std::cout << "i = " << i << std::endl;
+                    int r = recv(i, request, 1023, 0);
+                    if (r == -1)
                     {
-                        int fdserver = servers[j].getSocket().getSocketFd();
-                        if (FD_ISSET(fdserver,&readcpy) && i == fdserver) // new connection;
-                        {
-                            // std::cout << i << std::endl;
-                            socklen_t clinetsize = sizeof(clinet);
-                            fd_client = accept(fdserver, (sockaddr *)&clinet, &clinetsize);
-                            std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
-                            io.setFdRead(fd_client);
-                            if (fd_client > io._fdmax)
-                                io._fdmax = fd_client;
-                        }
-                        else
-                        {
-                            std::cout << "new request on server " << fdserver << std::endl;
-                            char buf[1024];
-                            int rc = recv(i, buf, 1023, 0);
-                        }
+                        std::cout << "Error in recv" << std::endl;
+                        FD_CLR(i, &io.fdread);
+                        close(i);
                     }
+                    if (r == 0)
+                    {
+                        std::cout << "Client disconnected" << std::endl;
+                        FD_CLR(i, &io.fdread);
+                        close(i);
+                    }
+                    else
+                    {
+                        request[r] = '\0';
+                        std::cout << "Request : " << request << std::endl;
+                        FD_CLR(i, &io.fdread);
+                        FD_SET(i, &io.fdwrite);
+                    }
+                }
+                else if (FD_ISSET(i, &writecpy)) //response
+                {
+
                 }
             }
         }
