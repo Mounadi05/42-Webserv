@@ -82,6 +82,7 @@ void IOMultiplexing::setFdMax(int fd)
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
 {
+    signal(SIGPIPE,SIG_IGN);
     fd_set readcpy, writecpy;
     int fd_client;
     struct timeval vl;
@@ -92,13 +93,13 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
     {
         readcpy = io.fdread;
         writecpy = io.fdwrite;
-        int r = select(io._fdmax + 1, &readcpy, NULL, NULL, &vl);
+        int r = select(io._fdmax + 1, &readcpy, &writecpy, NULL, &vl);
         if (r == -1)
         {
             std::cout << "Error in select" << std::endl;
             break;
         }
-        if (r == 0)
+        else if (r == 0)
             continue;
         else
         {
@@ -127,25 +128,41 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     {
                         std::cout << "Error in recv" << std::endl;
                         FD_CLR(i, &io.fdread);
+                        // FD_CLR(i,&readcpy);
                         close(i);
                     }
-                    if (r == 0)
+                    else if (r == 0)
                     {
                         std::cout << "Client disconnected" << std::endl;
                         FD_CLR(i, &io.fdread);
-                        close(i);
+                        // FD_CLR(i,&readcpy);
+                        // close(i);
                     }
                     else
                     {
                         request[r] = '\0';
-                        std::cout << "Request : " << request << std::endl;
+                        std::cout << "Request : " << std::endl << request << std::endl;
                         FD_CLR(i, &io.fdread);
                         FD_SET(i, &io.fdwrite);
                     }
                 }
-                else if (FD_ISSET(i, &writecpy)) //response
+                if (FD_ISSET(i, &writecpy)) //response
                 {
-
+                    std::cout << "i = " << i << std::endl;
+                    std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 12\r\n\r\nHello World!";
+                    int r = send(i, response.c_str(), response.size(), 0);
+                    if (r == -1)
+                    {
+                        std::cout << "Error in send" << std::endl;
+                        FD_CLR(i, &io.fdwrite);
+                        close(i);
+                    }
+                    else
+                    {
+                        std::cout << "Response : " << response << std::endl;
+                        FD_CLR(i, &io.fdwrite);
+                        FD_SET(i, &io.fdread);
+                    }
                 }
             }
         }
