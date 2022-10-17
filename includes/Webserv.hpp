@@ -14,5 +14,9 @@
 #include <string>
 #include <iostream>
 #include <utility>
+#include "Client.hpp"
+#include "Request.hpp"
+#include <map>
+#include "Response.hpp"
 
 #endif

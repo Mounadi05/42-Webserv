@@ -1,4 +1,5 @@
 #include "../../includes/Webserv.hpp"
+#include <utility>
 
 IOMultiplexing::IOMultiplexing()
 {
@@ -82,12 +83,17 @@ void IOMultiplexing::setFdMax(int fd)
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
 {
-    signal(SIGPIPE,SIG_IGN);
+    // signal(SIGPIPE,SIG_IGN);
     fd_set readcpy, writecpy;
     int fd_client;
     struct timeval vl;
     vl.tv_sec = 3;
     vl.tv_usec = 0;
+    // std::map<Client,Request> ClientRequest;
+    std::vector<std::pair<Client, Request> > ClientRequest;
+    std::vector<std::pair<Client, Response> > ClientResponse;
+    // std::vector<std::pair<Client, Response> > ClientResponse;
+    // std::vector<std::pair<Client, Response> > ClientRequest;
 
     while (1)
     {
@@ -103,68 +109,93 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             continue;
         else
         {
-            int maxfdserver = 0;
+            // int maxfdserver = 0;
             for (size_t j = 0; j < servers.size(); j++)
             {
                 int fdserver = servers[j].getSocket().getSocketFd();
                 if (FD_ISSET(fdserver, &readcpy))
                 {
-                    fd_client = accept(fdserver, NULL, NULL);
+                    Client newC;
+                    fd_client = accept(fdserver, NULL, NULL); // if fd != -1
+                    newC.setSocketFd(fd_client);
+                    newC.setServer(servers[j]);
+                    ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
                     std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
                     io.setFdRead(fd_client);
                     if (fd_client > io._fdmax)
                         io._fdmax = fd_client;
                 }
-                maxfdserver = fdserver;
+                // maxfdserver = fdserver;
             }
-            for (int i = maxfdserver + 1; i < io._fdmax + 1; i++)
+            for (u_int i = 0; i < ClientRequest.size(); i++)
             {
-                if (FD_ISSET(i, &readcpy)) //request
+                if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
                 {
                     char request[1024];
-                    std::cout << "i = " << i << std::endl;
-                    int r = recv(i, request, 1023, 0);
+                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
+                    int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0);
                     if (r == -1)
                     {
                         std::cout << "Error in recv" << std::endl;
-                        FD_CLR(i, &io.fdread);
+                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         // FD_CLR(i,&readcpy);
-                        close(i);
+                        close(ClientRequest[i].first.getSocketFd());
+                        // if (std::find(ClientRequest.begin(),ClientRequest.end(),ClientRequest[i]) != ClientRequest.end())
+                        //     ClientRequest.erase(std::find(ClientRequest.begin(),ClientRequest.end(),ClientRequest[i]));
+
                     }
+                    
                     else if (r == 0)
                     {
+                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         std::cout << "Client disconnected" << std::endl;
-                        FD_CLR(i, &io.fdread);
                         // FD_CLR(i,&readcpy);
-                        // close(i);
+                        close(ClientRequest[i].first.getSocketFd());
                     }
                     else
                     {
                         request[r] = '\0';
-                        std::cout << "Request : " << std::endl << request << std::endl;
-                        FD_CLR(i, &io.fdread);
-                        FD_SET(i, &io.fdwrite);
+                        
+                        // int finished = readRequest
+                        ClientRequest[i].second.setRequestBuffer(request);
+                        
+                        // if (ClientRequest[i].second.getRequestBuffer().find("\n") != std::string::npos ||ClientRequest[i].second.getRequestBuffer().find("\r\n") != std::string::npos )
+                        // {
+                            std::cout << "first line finished" << std::endl;
+                            std::cout << "Request : " << std::endl
+                                    << ClientRequest[i].second.getRequestBuffer() << std::endl;
+                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                            FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                        // }
+                        //if (finished == 1)
+                            // Response newORes(Request, servers);
                     }
                 }
-                if (FD_ISSET(i, &writecpy)) //response
+                if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
                 {
-                    std::cout << "i = " << i << std::endl;
+                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 12\r\n\r\nHello World!";
-                    int r = send(i, response.c_str(), response.size(), 0);
+                    int r = send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
                     if (r == -1)
                     {
                         std::cout << "Error in send" << std::endl;
-                        FD_CLR(i, &io.fdwrite);
-                        close(i);
+                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                        close(ClientRequest[i].first.getSocketFd());
                     }
                     else
                     {
                         std::cout << "Response : " << response << std::endl;
-                        FD_CLR(i, &io.fdwrite);
-                        FD_SET(i, &io.fdread);
+                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
                     }
                 }
             }
         }
     }
+}
+
+Response craft_response(std::pair<Client,Request> ClientRequest)
+{
+    (void) ClientRequest;
+    return Response();
 }
