@@ -2,7 +2,9 @@
 
 Client::Client()
 {
-
+    test = 0;
+       a = 0;
+      len = 0;
 }
 
 Client::~Client()

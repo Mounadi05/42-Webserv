@@ -62,6 +62,7 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
         sock.setSocketFd(fd);
         io.setFdRead(fd);
         io.setFdMax(fd);
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
         return (fd);
     }
     return (0);
@@ -79,6 +80,19 @@ int IOMultiplexing::getFdMax() const
 void IOMultiplexing::setFdMax(int fd)
 {
     _fdmax = fd;
+}
+int send_data(int fd,int test)
+{
+    char *str = new char[1025];
+    int a = read(test,str,1024);
+    if (a <= 0)
+    {
+        std::cout << "error or finished" << std::endl;
+        return a;
+    }
+    int t = send(fd,str,a,0);
+    std::cout << "send " << t << std::endl;
+    return t;
 }
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
@@ -101,7 +115,10 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             std::cout << "Error in select" << std::endl;
         }
         else if (r == 0)
+        {
+            std::cout << "timeout" << std::endl;
             continue;
+        }
         else
         {
             for (size_t j = 0; j < servers.size(); j++)
@@ -151,25 +168,42 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         std::cout << "Request : " << std::endl
                                   << ClientRequest[i].second.getRequestBuffer() << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                    }
+                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite); 
+                        ClientRequest[i].first.test = 0;
+                    } 
                 }
                 else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
                 {
-                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
-                    std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 12\r\n\r\nHello World!";
-                    int r = send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                    if (r == -1)
+                    if (ClientRequest[i].first.a == 0)
                     {
-                        std::cout << "Error in send" << std::endl;
-                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        close(ClientRequest[i].first.getSocketFd());
+                        std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
+                        std::string response;
+                        response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 64631923\r\nContent-type: video/mp4\r\nConnection: keep-alive\r\n\r\n";                        
+                        send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
+                         ClientRequest[i].first.test = open ("www/test.mp4",O_RDONLY);
+                        send_data(ClientRequest[i].first.getSocketFd(),ClientRequest[i].first.test);
+                        ClientRequest[i].first.a = 10;
                     }
                     else
                     {
-                        std::cout << "Response : " << response << std::endl;
-                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                        ClientRequest[i].first.len = send_data(ClientRequest[i].first.getSocketFd(),ClientRequest[i].first.test);
+                        if (ClientRequest[i].first.len == -1)
+                        {
+                            std::cout << "Error in send" << std::endl;
+                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                            // close(ClientRequest[i].first.getSocketFd());
+                            close(ClientRequest[i].first.test);
+                            // FD_SET(ClientRequest[i].first.getSocketFd(),&io.fdwrite);
+                            ClientRequest[i].first.a = 0;
+
+                        }
+                        else if(ClientRequest[i].first.len == 0)
+                        {
+                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                        //   FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                            // close(ClientRequest[i].first.test);
+                            ClientRequest[i].first.a = 0;
+                        }
                     }
                 }
             }

@@ -18,6 +18,9 @@ class Client
         void setSocketFd(int fd);
         void setServer(Server & clinet_server);
         Server & getServer();
+        int test;
+        int a;
+        int len;
 
 };
 
