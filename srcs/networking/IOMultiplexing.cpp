@@ -191,17 +191,16 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         {
                             std::cout << "Error in send" << std::endl;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                            // close(ClientRequest[i].first.getSocketFd());
                             close(ClientRequest[i].first.test);
-                            // FD_SET(ClientRequest[i].first.getSocketFd(),&io.fdwrite);
+                            FD_SET(ClientRequest[i].first.getSocketFd(),&io.fdread);
                             ClientRequest[i].first.a = 0;
 
                         }
                         else if(ClientRequest[i].first.len == 0)
                         {
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        //   FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                            // close(ClientRequest[i].first.test);
+                           FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                            close(ClientRequest[i].first.test);
                             ClientRequest[i].first.a = 0;
                         }
                     }
