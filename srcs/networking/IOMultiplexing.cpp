@@ -170,9 +170,9 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     else
                     {
                         request[r] = '\0';
-                        ClientRequest[i].second.setRequestBuffer(request);
-                        std::cout << "Request : " << std::endl
-                                  << ClientRequest[i].second.getRequestBuffer() << std::endl;
+                        ClientRequest[i].second.handle_request(request);
+                        std::cout << "Method " <<ClientRequest[i].second.Getrequest().at("Method") << std::endl;
+                        std::cout << "version " <<ClientRequest[i].second.Getrequest().at("Version") << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                         ClientRequest[i].first.test = 0;
@@ -226,8 +226,3 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
     }
 }
 
-Response craft_response(std::pair<Client, Request> ClientRequest)
-{
-    (void)ClientRequest;
-    return Response();
-}

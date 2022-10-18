@@ -1,4 +1,4 @@
-#include "Request.hpp" 
+#include "../../includes/Webserv.hpp"
     Request::Request()
     {
         lent = 0;
@@ -32,7 +32,7 @@
         std::string tmp;
         delemiter = str.find(" ",index);
         tmp = str.substr(index,delemiter);
-        request.insert(std::pair<std::string ,std::string>("Methode",tmp));
+        request.insert(std::pair<std::string ,std::string>("Method",tmp));
         index =  delemiter;
         delemiter = str.find(" ",index+1);
         tmp = str.substr(index,delemiter - index);
@@ -45,19 +45,20 @@
             first_line = 1;
         else
             status_code = 400;
+
     }
     void Request::check_request(char *tmp)
     {
         std::string check = tmp;
         if (!first_line)
         {
-            if (check.find("\r\n\r\n",0) != -1)
+            if ((int)check.find("\r\n\r\n",0) != -1)
             {
                 header = 1;
                 valid_request(check);
                 buffer +=check;
             }
-            else if (check.find("\r\n",0) != -1)
+            else if ((int)check.find("\r\n",0) != -1)
             {
                 valid_request(check);
                 buffer += check;
@@ -65,7 +66,7 @@
             else
                 status_code = 400;
         }
-        else if (check.find("\r\n\r\n",0) != -1)
+        else if ((int)check.find("\r\n\r\n",0) != -1)
         {
             buffer += check;
             header = 1;

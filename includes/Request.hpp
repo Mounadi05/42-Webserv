@@ -1,5 +1,5 @@
- #ifndef Request_class
-#define Request_class
+#ifndef REQUEST_HPP
+#define REQUEST_HPP
 
  #include <iostream>
 #include <map>
@@ -9,10 +9,9 @@ class Request{
         int header;
         int first_line;
         int status_code;  
-        std::string buffer;
         int lent;
     public:
-      
+        std::string buffer;
         Request();
         ~Request();
         std::map <std::string,std::string> &Getrequest(void);
