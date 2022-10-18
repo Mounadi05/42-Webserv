@@ -14,9 +14,14 @@ void IOMultiplexing::SetupServers(Config &conf)
 {
     conf.parse();
     std::vector<Server> &Svec = conf.getServers();
-    for (size_t i = 0; i < Svec.size(); i++)
-        CreatServer(Svec[i], *this);
-    EventLoop(Svec, *this);
+    if (Svec.size())
+    {
+        for (size_t i = 0; i < Svec.size(); i++)
+            CreatServer(Svec[i], *this);
+        EventLoop(Svec, *this);
+    }
+    else
+        printError("Bad config file " + conf.getFilePath());
 }
 
 int CreatServer(Server &server, IOMultiplexing &io)
@@ -47,13 +52,14 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
             printError("setsockopt failed");
             return (-1);
         }
+        fcntl(fd, F_SETFL, O_NONBLOCK);
         if (bind(fd, (struct sockaddr *)sockaddr, sizeof(*sockaddr)) == -1)
         {
             printError("Bind failed");
             return (-1);
         }
         // std::cout << "Binded " << port << std::endl;
-        if (listen(fd, 10) == -1)
+        if (listen(fd, SOMAXCONN) == -1)
         {
             printError("Listen failed");
             return (-1);
@@ -81,16 +87,16 @@ void IOMultiplexing::setFdMax(int fd)
 {
     _fdmax = fd;
 }
-int send_data(int fd,int test)
+int send_data(int fd, int test)
 {
     char *str = new char[1025];
-    int a = read(test,str,1024);
+    int a = read(test, str, 1024);
     if (a <= 0)
     {
         std::cout << "error or finished" << std::endl;
         return a;
     }
-    int t = send(fd,str,a,0);
+    int t = send(fd, str, a, 0);
     std::cout << "send " << t << std::endl;
     return t;
 }
@@ -129,6 +135,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     Client newC;
                     if ((fd_client = accept(fdserver, NULL, NULL)) != -1)
                     {
+                        fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
                         newC.setServer(servers[j]);
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
@@ -164,13 +171,12 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     {
                         request[r] = '\0';
                         ClientRequest[i].second.setRequestBuffer(request);
-                        std::cout << "first line finished" << std::endl;
                         std::cout << "Request : " << std::endl
                                   << ClientRequest[i].second.getRequestBuffer() << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite); 
+                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                         ClientRequest[i].first.test = 0;
-                    } 
+                    }
                 }
                 else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
                 {
@@ -178,30 +184,40 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     {
                         std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                         std::string response;
-                        response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 64631923\r\nContent-type: video/mp4\r\nConnection: keep-alive\r\n\r\n";                        
+                        response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 21\r\nContent-type: text/html\r\nConnection: close\r\n\r\n<H1>Hello World!</H1>";
                         send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                         ClientRequest[i].first.test = open ("www/test.mp4",O_RDONLY);
-                        send_data(ClientRequest[i].first.getSocketFd(),ClientRequest[i].first.test);
-                        ClientRequest[i].first.a = 10;
+                        // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
+                        // FD_SET(ClientRequest[i].first.test,&io.fdread);
+                        // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
+                        // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
+                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                        close(ClientRequest[i].first.getSocketFd());
+                        ClientRequest.erase(ClientRequest.begin() + i);
+                        // FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                        // ClientRequest[i].first.a = 10;
                     }
                     else
                     {
-                        ClientRequest[i].first.len = send_data(ClientRequest[i].first.getSocketFd(),ClientRequest[i].first.test);
-                        if (ClientRequest[i].first.len == -1)
+                        if (FD_ISSET(ClientRequest[i].first.test, &io.fdread))
                         {
-                            std::cout << "Error in send" << std::endl;
-                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                            close(ClientRequest[i].first.test);
-                            FD_SET(ClientRequest[i].first.getSocketFd(),&io.fdread);
-                            ClientRequest[i].first.a = 0;
-
-                        }
-                        else if(ClientRequest[i].first.len == 0)
-                        {
-                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                           FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                            close(ClientRequest[i].first.test);
-                            ClientRequest[i].first.a = 0;
+                            ClientRequest[i].first.len = send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
+                            if (ClientRequest[i].first.len == -1)
+                            {
+                                std::cout << "Error in send" << std::endl;
+                                FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                                close(ClientRequest[i].first.test);
+                                FD_CLR(ClientRequest[i].first.test, &io.fdread);
+                                FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                                ClientRequest[i].first.a = 0;
+                            }
+                            else if (ClientRequest[i].first.len == 0)
+                            {
+                                FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                                FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                                FD_CLR(ClientRequest[i].first.test, &io.fdread);
+                                close(ClientRequest[i].first.test);
+                                ClientRequest[i].first.a = 0;
+                            }
                         }
                     }
                 }

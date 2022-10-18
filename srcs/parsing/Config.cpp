@@ -9,7 +9,8 @@ Config::~Config()
     _Configfile.close();
 }
 
-void Config::SetConfigFile(std::string Path){
+void Config::SetConfigFile(std::string Path)
+{
     this->_FilePath = Path;
     this->_Configfile.open(_FilePath);
 
@@ -81,11 +82,17 @@ void Config::parse()
     int n_server = 0;
     std::string line;
 
+    int start = 0;
     while (skip_empty_lines(_Configfile) && getline(_Configfile, line))
     {
         std::string token;
         while ((token = getNextToken(line)) != "")
         {
+            skip_empty_lines(_Configfile);
+            if (!start && token != "server")
+                printError("config File Error");
+            else
+                start = 1;
             if (token == "{")
                 curly_phrases.push_back(token);
             else if (token == "}")
@@ -93,7 +100,7 @@ void Config::parse()
                 if (curly_phrases.size() != 0)
                     curly_phrases.pop_back();
                 else
-                    printError("Error: missing opning server block");
+                    printError("missing opning server block");
             }
             else if (token == "server")
             {
@@ -109,7 +116,7 @@ void Config::parse()
             {
                 std::string root = getNextToken(line);
                 if (root == "")
-                    printError("Error: root without value");
+                    printError("root without value");
                 _Servers[n_server - 1].setRoot(root);
             }
             else if (token == "error_page")
@@ -118,11 +125,14 @@ void Config::parse()
                 std::string error_code = getNextToken(line);
                 std::string error_path = getNextToken(line);
                 if (error_code == "" || error_path == "")
-                    printError("Error: error_page must have 2 arguments");
+                    printError("error_page must have 2 arguments");
                 while (error_code != "" && error_path != "")
                 {
                     error_pages.push_back(std::make_pair(error_code, error_path));
-                    error_code = getNextToken(line);
+                    if (valide_error_code(error_code))
+                        error_code = getNextToken(line);
+                    else
+                        printError("");
                     error_path = getNextToken(line);
                 }
                 _Servers[n_server - 1].setErrorPages(error_pages);
@@ -132,7 +142,7 @@ void Config::parse()
                 std::vector<std::string> indexes;
                 std::string index = getNextToken(line);
                 if (index == "")
-                    printError("Error: index without value");
+                    printError("index without value");
                 while (index != "")
                 {
                     indexes.push_back(index);
@@ -144,7 +154,7 @@ void Config::parse()
             {
                 std::string client_max_body_size = getNextToken(line);
                 if (client_max_body_size == "")
-                    printError("Error: client_max_body_size without value");
+                    printError("client_max_body_size without value");
                 _Servers[n_server - 1].setClientMaxBodySize(client_max_body_size);
             }
             else if (token == "location")
@@ -153,14 +163,14 @@ void Config::parse()
             {
                 std::string autoindex = getNextToken(line);
                 if (autoindex == "")
-                    printError("Error: autoindex must be on or off");
+                    printError("autoindex must be on or off");
                 _Servers[n_server - 1].setAutoIndex(autoindex);
             }
             else if (token == "upload_path")
             {
                 std::string upload_store = getNextToken(line);
                 if (upload_store == "")
-                    printError("Error: upload_path without path");
+                    printError("upload_path without path");
                 _Servers[n_server - 1].setUploadPath(upload_store);
             }
             else if (token == "allow_methods")
@@ -168,8 +178,9 @@ void Config::parse()
                 std::vector<std::string> allow_methods;
 
                 std::string allow_method = getNextToken(line);
+
                 if (allow_method == "")
-                    printError("Error: allow_methods without methods");
+                    printError("allow_methods without methods");
                 while (allow_method != "")
                 {
                     allow_methods.push_back(allow_method);
@@ -178,27 +189,56 @@ void Config::parse()
                 _Servers[n_server - 1].setAllowedMethods(allow_methods);
             }
             else
-                printError("Error: unknown token " + token);
+                printError("unknown token " + token);
         }
     }
+}
+
+int check_method(std::string method)
+{
+    std::string tmp;
+    for (u_int x = 0; x < method.length(); x++)
+        tmp += toupper(method[x]);
+    return (tmp == "POST" || tmp == "DELETE" || tmp == "GET");
 }
 
 void Config::hadel_listen(std::string &line, Server &server)
 {
     std::string port = getNextToken(line);
     if (port == "")
-        printError("Error: listen directive must have a port");
+        printError("listen directive must have a port");
     try
     {
         if (stoi(port) >= 0 && stoi(port) <= 65536)
             server.setPort(stoi(port));
         else
-            printError("Error: port must be between 0 and 65536");
+            printError("port must be between 0 and 65536");
     }
     catch (...)
     {
-        printError("Error: port must be a number");
+        printError("port must be a number");
     }
+}
+
+int is_number(std::string buf)
+{
+    for (size_t i = 0; i < buf.length(); i++)
+        if (!isnumber(buf[i]))
+            return 0;
+    return (1);
+}
+
+int valide_error_code(std::string error_code)
+{
+    // int number = 0;
+    if (is_number(error_code))
+    {
+        if (stoi(error_code) < 400)
+            printError("not valid error code");
+    }
+    else
+        printError("not valid error code");
+    return 1;
 }
 
 void Config::handel_server_name(std::string &line, Server &server)
@@ -206,13 +246,18 @@ void Config::handel_server_name(std::string &line, Server &server)
     std::vector<std::string> server_names;
     std::string server_name = getNextToken(line);
     if (server_name == "")
-        printError("Error: server_name is empty");
+        printError("server_name is empty");
     while (server_name != "")
     {
         server_names.push_back(server_name);
         server_name = getNextToken(line);
     }
     server.setServerNames(server_names);
+}
+
+std::string Config::getFilePath() const
+{
+    return this->_FilePath;
 }
 
 void Config::handel_location(std::string &line, Server &server)
@@ -222,8 +267,10 @@ void Config::handel_location(std::string &line, Server &server)
     std::string token = "";
     std::string token_path = getNextToken(line);
     if (token_path == "")
-        printError("Error: location path is empty");
+        printError("location path is empty");
     location.setLocationPath(token_path);
+
+    // int start = 0;
     while (skip_empty_lines(_Configfile) && getline(_Configfile, line))
     {
         while ((token = getNextToken(line)) != "")
@@ -236,7 +283,7 @@ void Config::handel_location(std::string &line, Server &server)
             else if (token == "}")
             {
                 if (curly_phrases.size() == 0)
-                    printError("Error: missing opning location block");
+                    printError("missing opning location block");
                 if (curly_phrases.size())
                     curly_phrases.pop_back();
                 if (curly_phrases.size() == 0)
@@ -249,12 +296,16 @@ void Config::handel_location(std::string &line, Server &server)
             {
                 std::vector<std::string> methods;
                 std::string method = getNextToken(line);
+                // std::cout << check_method(method) << ":" << method << std::endl;
                 if (method == "")
-                    printError("Error: allow_methods is empty");
+                    printError("allow_methods is empty");
                 while (method != "")
                 {
+                    if (!check_method(method))
+                        printError("bad methos as argument");
                     methods.push_back(method);
                     method = getNextToken(line);
+                    // std::cout << check_method(method) << ":" << method << std::endl;
                 }
                 location.setAllowedMethods(methods);
             }
@@ -262,21 +313,24 @@ void Config::handel_location(std::string &line, Server &server)
             {
                 std::string size = getNextToken(line);
                 if (size == "")
-                    printError("Error: client_max_body_size is empty");
-                location.setClientMaxBodySize(size);
+                    printError("client_max_body_size is empty");
+                if (is_number(size))
+                    location.setClientMaxBodySize(size);
+                else
+                    printError("client_max_body_size must be a number");
             }
             else if (token == "root")
             {
                 std::string root = getNextToken(line);
                 if (root == "")
-                    printError("Error: root is empty");
+                    printError("root is empty");
                 location.setRoot(root);
             }
             else if (token == "autoindex")
             {
                 std::string autoindex = getNextToken(line);
                 if (autoindex == "")
-                    printError("Error: autoindex is empty");
+                    printError("autoindex is empty");
                 location.setAutoIndex(autoindex);
             }
             else if (token == "index")
@@ -284,7 +338,7 @@ void Config::handel_location(std::string &line, Server &server)
                 std::vector<std::string> indexes;
                 std::string index = getNextToken(line);
                 if (index == "")
-                    printError("Error: index is empty");
+                    printError("index is empty");
                 while (index != "")
                 {
                     indexes.push_back(index);
@@ -293,7 +347,7 @@ void Config::handel_location(std::string &line, Server &server)
                 location.setIndex(indexes);
             }
             else
-                printError("Error : unclosed location block");
+                printError("Config File Error");
         }
     }
 }
@@ -305,7 +359,7 @@ bool is_empty(std::ifstream &pFile)
 
 void printError(std::string message)
 {
-    std::cerr << message << std::endl;
+    std::cerr << "Error : " << message << std::endl;
     exit(1);
 }
 
@@ -360,6 +414,7 @@ std::string getNextToken(std::string &line)
     return token;
 }
 
-std::vector<Server> & Config::getServers(){
+std::vector<Server> &Config::getServers()
+{
     return _Servers;
 }

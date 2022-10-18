@@ -24,6 +24,7 @@ class Config{
     void hadel_listen(std::string &line, Server &server);
     void print_servers();
     std::vector<Server> & getServers();
+    std::string getFilePath() const;
 };
 
 bool valide_host(std::string &host);
@@ -34,5 +35,6 @@ std::string getBlockName(std::string &line);
 bool skip_empty_lines(std::ifstream &pFile);
 bool is_empty(std::ifstream &pFile);
 void printError(std::string message);
+int valide_error_code(std::string error_code);
 
 #endif

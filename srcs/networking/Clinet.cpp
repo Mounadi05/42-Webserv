@@ -9,7 +9,7 @@ Client::Client()
 
 Client::~Client()
 {
-
+    // close(test);
 }
 
 int Client::getSocketFd()
