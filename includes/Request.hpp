@@ -9,8 +9,8 @@ class Request{
         int header;
         int first_line;
         int status_code;  
-        int lent;
-        int lent_body;
+        int _length;
+        int body_length;
         int fd;
         int finished;
     public:
@@ -25,8 +25,8 @@ class Request{
         void valid_request(std::string str);
         void check_request(char *tmp);
         void handle_request(char *str);
-        int &Getlent(void);
-        void Setlent(int l);
+        int &getLength(void);
+        void setLength(int l);
         std::string get_header(std::string str);
         void get_body(char *str);
         void write_body(char *str);

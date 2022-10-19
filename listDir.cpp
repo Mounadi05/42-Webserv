@@ -47,9 +47,9 @@ std::string getsize(long long st_size)
   }
 }
 
-t_dir show_dir_content(char *path)
+t_dir show_dir_content(std::string path)
 {
-  DIR *d = opendir(path);
+  DIR *d = opendir(path.c_str());
   t_dir ret;
 
   if (d)
@@ -95,32 +95,32 @@ t_dir show_dir_content(char *path)
   return ret;
 }
 
-std::string generate_autoindex(t_dir vec, std::string path)
+std::string generate_autoindex(std::string path)
 {
   std::string ret = "";
-  ret += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"><html><head><title>Index of " + path.substr(1) + "</title></head>";
-  ret += "<body><h1>Index of " + path.substr(1) + "</h1>";
-  ret += "<table><tr><th valign='top'></th><th><a href='?C=N;O=D'>Name</a></th><th><a href='?C=S;O=A'>Size</a></th></tr><tr>\
-          <th colspan='5'><hr></th></tr>";
-  for (size_t i = 0; i < vec.size(); i++)
+  if (!path.empty())
   {
-    ret += "<tr>";
-    ret += "<td valign='top'><img src='"+((vec[i].second == ISFILE)? std::string(filecdn) : std::string(foldercdn)) +"' alt='[DIR]'></td>";
-    ret += "<td><a href='"+vec[i].first.first+"'>"+vec[i].first.first+"</a></td>";
-    ret += "<td align='right'> "+ vec[i].first.second +" </td>";
-    ret += "<td>&nbsp;</td>";
+    t_dir vec = show_dir_content(path);
+    ret += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"><html><head><title>Index of " + path.substr(1) + "</title></head>";
+    ret += "<body><h1>Index of " + path.substr(1) + "</h1>";
+    ret += "<table><tr><th valign='top'></th><th><a href='?C=N;O=D'>Name</a></th><th><a href='?C=S;O=A'>Size</a></th></tr><tr>\
+            <th colspan='5'><hr></th></tr>";
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+      ret += "<tr>";
+      ret += "<td valign='top'><img src='" + ((vec[i].second == ISFILE) ? std::string(filecdn) : std::string(foldercdn)) + "' alt='[DIR]'></td>";
+      ret += "<td><a href='" + vec[i].first.first + "'>" + vec[i].first.first + "</a></td>";
+      ret += "<td align='right'> " + vec[i].first.second + " </td>";
+      ret += "<td>&nbsp;</td>";
+    }
+    ret += "<tr><th colspan='5'><hr></th></tr></table></body>";
   }
-  ret += "<tr><th colspan='5'><hr></th></tr></table></body>";
   return ret;
 }
 
 int main(int argc, char **argv)
 {
-  t_dir vec = show_dir_content(argv[1]);
-  std::cout << generate_autoindex(vec,argv[1]) << std::endl;
-
-  // for (size_t i = 0; i < vec.size(); i++)
-  //   std::cout << ((vec[i].second == ISFILE) ? BLUE : GREEN) << vec[i].first.first << " " << vec[i].first.second << std::endl;
-
+  if (argc != 1)
+    std::cout << generate_autoindex(argv[1]) << std::endl;
   return (0);
 }

@@ -6,6 +6,8 @@
 
 int craftResponse(Request request, Server server, int clientFd)
 {
+    (void) server;
+    (void) clientFd;
     if (request.Getstatus_code() == 400)
     {
 
@@ -126,7 +128,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
     vl.tv_sec = 3;
     vl.tv_usec = 0;
     std::vector<std::pair<Client, Request> > ClientRequest;
-    std::vector<std::pair<Client, Response> > ClientResponse;
+    std::vector<Response> ReadyResponse;
 
     while (1)
     {
@@ -184,12 +186,15 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         close(ClientRequest[i].first.getSocketFd());
                         ClientRequest.erase(ClientRequest.begin() + i);
                     }
+                    else if (ClientRequest[i].second.Getstatus_code() == 0)
+                    {
+                        Response resp(ClientRequest[i].second,ClientRequest[i].first.getServer(),ClientRequest[i].first.getSocketFd());
+                        ReadyResponse.push_back(resp);
+                    }
                     else
                     {
-                        request[r] = '\0';
+                        ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
-                        std::cout << "Method " <<ClientRequest[i].second.Getrequest().at("Method") << std::endl;
-                        std::cout << "version " <<ClientRequest[i].second.Getrequest().at("Version") << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                         ClientRequest[i].first.test = 0;
@@ -199,12 +204,8 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 { 
                     std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     std::string response;
-                    response = (char *)"HTTP/1.1 201\r\nConnection: close\r\n\r\n";
+                    response = (char *)"HTTP/1.1 201\r\n\r\n";
                     send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                    // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
-                    // FD_SET(ClientRequest[i].first.test,&io.fdread);
-                    // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
-                    // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
                     FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                     FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
                 }

@@ -1,12 +1,12 @@
 #include "../../includes/Webserv.hpp"
     Request::Request()
     {
-        lent = 0;
+        _length = 0;
         header = 0;
         first_line = 0;
         status_code = 0;
         body = new char[1025];
-        lent_body = 0;
+        body_length = 0;
         fd = 0;
         finished = 0;
     }
@@ -29,13 +29,13 @@
     {
         return first_line;
     }
-    int &Request::Getlent(void)
+    int &Request::getLength(void)
     {
-        return lent;
+        return _length;
     }
-    void Request::Setlent(int l)
+    void Request::setLength(int length)
     {
-        lent = l;
+        _length = length;
     }
     void Request::valid_request(std::string str)
     {
@@ -78,9 +78,9 @@
         std::string tmp = str;
         int i = tmp.find("\r\n\r\n",0) + 4;
         int a = 0;
-        while(i < lent)
+        while(i < _length)
             body[a++] = str[i++];
-        lent_body = a;
+        body_length = a;
     }
 
     void Request::check_request(char *tmp)
@@ -113,10 +113,12 @@
         else
             buffer += check;
     }
+
     void Request::write_body(char *str)
     {
-        write(fd,str,lent_body);
+        write(fd,str,body_length);
     }
+
     void Request::delete_space(std::string &str)
     {
         for(int i = 0 ; str[i]; i++)
@@ -134,6 +136,7 @@
         path += path1 + "." + tmp;
         fd = open(path.c_str(),O_CREAT|O_RDWR,0644);
     }
+
     void Request::handle_request(char *str)
     {
         int index = 0;
@@ -167,7 +170,7 @@
         }
         else if (finished)
         {
-            lent_body = lent;
+            body_length = _length;
             if (request.at("Method") == "POST")
                 write_body(str);  
         }
