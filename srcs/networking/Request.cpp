@@ -80,7 +80,7 @@
         int a = 0;
         while(i < lent)
             body[a++] = str[i++];
-        lent_body = a - 1;
+        lent_body = a;
     }
 
     void Request::check_request(char *tmp)
@@ -130,7 +130,6 @@
         std::string path1 = request.at("Path").substr(request.at("Path").find("/",0) + 1,request.at("Path").size());
         delete_space(tmp);
         std::string path = (char *)"upload/";
-        std::cout << path1<< std::endl;
         delete_space(path1);
         path += path1 + "." + tmp;
         fd = open(path.c_str(),O_CREAT|O_RDWR,0644);

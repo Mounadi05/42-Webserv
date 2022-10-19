@@ -138,7 +138,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
                 {
-                    char request[1024];
+                    char request[1025];
                     std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0);
                     if (r == -1)
@@ -167,18 +167,17 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     // ClientResponse.pushback()
                 }
                 else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
-                {
-                    
-                        std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
-                        std::string response;
-                        response = (char *)"HTTP/1.1 201 CREATED\r\nConnection: keep-alive\r\n\r\n";
-                        send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                        // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
-                        // FD_SET(ClientRequest[i].first.test,&io.fdread);
-                        // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
-                        // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
-                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                { 
+                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
+                    std::string response;
+                    response = (char *)"HTTP/1.1 201 CREATED\r\nConnection: close\r\n\r\n";
+                    send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
+                    // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
+                    // FD_SET(ClientRequest[i].first.test,&io.fdread);
+                    // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
+                    // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
+                    FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                    FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
                 }
              }
         }
