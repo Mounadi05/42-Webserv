@@ -167,7 +167,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
                 {
-                    char request[1025];
+                    char request[1024];
                     std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0);
                     if (r == -1)
@@ -196,17 +196,30 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     }
                 }
                 else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
-                { 
-                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
-                    std::string response;
-                    response = (char *)"HTTP/1.1 201\r\nConnection: close\r\n\r\n";
-                    send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                    // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
-                    // FD_SET(ClientRequest[i].first.test,&io.fdread);
-                    // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
-                    // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
-                    FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                    FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                {
+                    int responseSent = 0;
+
+                    responseSent = craftResponse(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                    // if (responseSent == -1)
+                    // {
+                    //    
+                    // }
+                    // else if (responseSent == DONE)
+                    // {
+                    //     // check if connection is Keep-Alive or not
+                    //     if (ClientRequest[i].second.Getrequest().at("Connection").compare("Keep-Alive") == 0)
+                    //     {
+                    //         ClientRequest.pushback(std::make_pair<Client, Request> (ClientRequest.first, Request()));
+                    //         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                    //         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                    //     } 
+                    //     else
+                    //     {
+                    //         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                    //         close(ClientRequest[i].first.getSocketFd());
+                    //         ClientRequest[i].erase(); // set index
+                    //     }
+                    // }
                 }
             }
         }
