@@ -10,8 +10,12 @@ class Request{
         int first_line;
         int status_code;  
         int lent;
+        int lent_body;
+        int fd;
+        int finished;
     public:
         std::string buffer;
+        char * body;
         Request();
         ~Request();
         std::map <std::string,std::string> &Getrequest(void);
@@ -21,5 +25,15 @@ class Request{
         void valid_request(std::string str);
         void check_request(char *tmp);
         void handle_request(char *str);
+        int &Getlent(void);
+        void Setlent(int l);
+        std::string get_header(std::string str);
+        void get_body(char *str);
+        void write_body(char *str);
+        void open_file(void);
+        void  delete_space(std::string &str);
+
+
+
 };
 #endif

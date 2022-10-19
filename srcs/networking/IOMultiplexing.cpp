@@ -87,19 +87,7 @@ void IOMultiplexing::setFdMax(int fd)
 {
     _fdmax = fd;
 }
-int send_data(int fd, int test)
-{
-    char *str = new char[1025];
-    int a = read(test, str, 1024);
-    if (a <= 0)
-    {
-        std::cout << "error or finished" << std::endl;
-        return a;
-    }
-    int t = send(fd, str, a, 0);
-    std::cout << "send " << t << std::endl;
-    return t;
-}
+
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
 {
@@ -169,59 +157,30 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     }
                     else
                     {
-                        request[r] = '\0';
+                        ClientRequest[i].second.Setlent(r);
                         ClientRequest[i].second.handle_request(request);
-                        std::cout << "Method " <<ClientRequest[i].second.Getrequest().at("Method") << std::endl;
-                        std::cout << "version " <<ClientRequest[i].second.Getrequest().at("Version") << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                         ClientRequest[i].first.test = 0;
                     }
+                    //Response newClientR(Request, server)
+                    // ClientResponse.pushback()
                 }
                 else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
                 {
-                    if (ClientRequest[i].first.a == 0)
-                    {
+                    
                         std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                         std::string response;
-                        response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 21\r\nContent-type: text/html\r\nConnection: close\r\n\r\n<H1>Hello World!</H1>";
+                        response = (char *)"HTTP/1.1 201 CREATED\r\nConnection: keep-alive\r\n\r\n";
                         send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
                         // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
                         // FD_SET(ClientRequest[i].first.test,&io.fdread);
                         // fcntl(ClientRequest[i].first.test, F_SETFL, O_NONBLOCK);
                         // send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        close(ClientRequest[i].first.getSocketFd());
-                        ClientRequest.erase(ClientRequest.begin() + i);
-                        // FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                        // ClientRequest[i].first.a = 10;
-                    }
-                    else
-                    {
-                        if (FD_ISSET(ClientRequest[i].first.test, &io.fdread))
-                        {
-                            ClientRequest[i].first.len = send_data(ClientRequest[i].first.getSocketFd(), ClientRequest[i].first.test);
-                            if (ClientRequest[i].first.len == -1)
-                            {
-                                std::cout << "Error in send" << std::endl;
-                                FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                                close(ClientRequest[i].first.test);
-                                FD_CLR(ClientRequest[i].first.test, &io.fdread);
-                                FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                                ClientRequest[i].first.a = 0;
-                            }
-                            else if (ClientRequest[i].first.len == 0)
-                            {
-                                FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                                FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                                FD_CLR(ClientRequest[i].first.test, &io.fdread);
-                                close(ClientRequest[i].first.test);
-                                ClientRequest[i].first.a = 0;
-                            }
-                        }
-                    }
+                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
                 }
-            }
+             }
         }
     }
 }
