@@ -170,7 +170,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 { 
                     std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     std::string response;
-                    response = (char *)"HTTP/1.1 201 CREATED\r\nConnection: close\r\n\r\n";
+                    response = (char *)"HTTP/1.1 201\r\nConnection: close\r\n\r\n";
                     send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
                     // ClientRequest[i].first.test = open("www/test.mp4", O_RDONLY);
                     // FD_SET(ClientRequest[i].first.test,&io.fdread);
