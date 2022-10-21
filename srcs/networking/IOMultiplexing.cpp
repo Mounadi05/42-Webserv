@@ -4,19 +4,6 @@
 #define DONE 1
 #define NOT_FINISHED 0
 
-// int craftResponse(Request request, Server server, int clientFd)
-// {
-//     (void)server;
-//     (void)clientFd;
-//     if (request.Getstatus_code() == 400)
-//     {
-//     }
-//     else
-//     {
-//     }
-//     return DONE;
-// }
-
 IOMultiplexing::IOMultiplexing()
 {
     _fdmax = 0;
@@ -103,19 +90,6 @@ void IOMultiplexing::setFdMax(int fd)
 {
     _fdmax = fd;
 }
-int send_data(int fd, int test)
-{
-    char *str = new char[1025];
-    int a = read(test, str, 1024);
-    if (a <= 0)
-    {
-        std::cout << "error or finished" << std::endl;
-        return a;
-    }
-    int t = send(fd, str, a, 0);
-    std::cout << "send " << t << std::endl;
-    return t;
-}
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
 {
@@ -154,7 +128,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
                         newC.setServer(servers[j]);
-                        std::cout << ClientRequest.size() << std::endl;
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
                         std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
                         io.setFdRead(fd_client);
@@ -169,7 +142,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 {
                     char request[1025];
                     std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
-                    int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0);
+                    int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0); 
                     if (r == -1)
                     {
                         std::cout << "Error in recv" << std::endl;
@@ -186,14 +159,14 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     }
                     else
                     {
+                        ClientRequest[i].second = Request();
                         ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                        ClientRequest[i].first.test = 0;
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
-                            std::cout << "accept" << std::endl;
+                            std::cout << "Path" << ClientRequest[i].second.Getrequest().at("Path") <<"    in client : " << ClientRequest[i].first.getSocketFd()<< std::endl;
                             Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                             ReadyResponse.push_back(resp);
                         }
@@ -205,9 +178,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
                 {
-                    ReadyResponse[i].handler();
-                    FD_CLR(ReadyResponse[i].getClientFD(), &io.fdwrite);
-                    FD_SET(ReadyResponse[i].getClientFD(), &io.fdread);
+                    ReadyResponse[i].handler(io.fdread,io.fdwrite);   
                 }
             }
         }

@@ -12,7 +12,6 @@ Request::Request()
 }
 Request::~Request()
 {
-    std::cout <<  "" << std::endl;
 }
 std::map<std::string, std::string> &Request::Getrequest(void)
 {
@@ -87,7 +86,6 @@ void Request::get_body(char *str)
 void Request::check_request(char *tmp)
 {
     std::string check = tmp;
-    std::cout << tmp << std::endl;
     if (!first_line)
     {
         if ((int)check.find("\r\n\r\n", 0) != -1)
