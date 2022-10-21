@@ -4,19 +4,18 @@
 #define DONE 1
 #define NOT_FINISHED 0
 
-int craftResponse(Request request, Server server, int clientFd)
-{
-    (void)server;
-    (void)clientFd;
-    if (request.Getstatus_code() == 400)
-    {
-    }
-    else
-    {
-    }
-
-    return DONE;
-}
+// int craftResponse(Request request, Server server, int clientFd)
+// {
+//     (void)server;
+//     (void)clientFd;
+//     if (request.Getstatus_code() == 400)
+//     {
+//     }
+//     else
+//     {
+//     }
+//     return DONE;
+// }
 
 IOMultiplexing::IOMultiplexing()
 {
@@ -206,10 +205,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
                 {
-                    std::cout << "i = " << ReadyResponse[i].getClientFD() << std::endl;
-                    std::string response;
-                    response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 21\r\nContent-type: text/html\r\nConnection: keep-alive\r\n\r\n<H1>Hello World!</H1>";
-                    send(ReadyResponse[i].getClientFD(), response.c_str(), response.size(), 0);
+                    ReadyResponse[i].handler();
                     FD_CLR(ReadyResponse[i].getClientFD(), &io.fdwrite);
                     FD_SET(ReadyResponse[i].getClientFD(), &io.fdread);
                 }

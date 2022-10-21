@@ -17,6 +17,7 @@ public:
     int getClientFD() const;
     Request & getRequest();
     Server & getServer();
+    int handler();
 };
 
 #endif
