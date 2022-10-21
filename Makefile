@@ -11,7 +11,7 @@ src = 	./srcs/parsing/Config.cpp\
 main = webserv.cpp
 obj = $(src:.cpp=.o)
 
-CPP = c++ -Wall -Wextra -Werror -std=c++98 -fsanitize=address
+CPP = c++ -Wall -Wextra -Werror -std=c++98 -fsanitize=address -g
 
 $(Name): $(obj)
 	$(CPP) $(main) -o $(Name) $(obj)

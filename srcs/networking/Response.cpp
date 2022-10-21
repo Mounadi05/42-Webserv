@@ -5,7 +5,7 @@ Response::Response()
 
 }
 
-Response::Response(Request & request,Server & server, int ClientFD)
+Response::Response(Request  request,Server  server, int ClientFD)
 {
     _request = request;
     _server = server;

@@ -32,6 +32,9 @@ class Request{
         void write_body(char *str);
         void open_file(void);
         void  delete_space(std::string &str);
+        int &getFinished(){
+            return finished;
+        }
 
 
 

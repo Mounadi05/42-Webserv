@@ -6,15 +6,13 @@
 
 int craftResponse(Request request, Server server, int clientFd)
 {
-    (void) server;
-    (void) clientFd;
+    (void)server;
+    (void)clientFd;
     if (request.Getstatus_code() == 400)
     {
-
     }
     else
     {
-
     }
 
     return DONE;
@@ -157,6 +155,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
                         newC.setServer(servers[j]);
+                        std::cout << ClientRequest.size() << std::endl;
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
                         std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
                         io.setFdRead(fd_client);
@@ -186,11 +185,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         close(ClientRequest[i].first.getSocketFd());
                         ClientRequest.erase(ClientRequest.begin() + i);
                     }
-                    else if (ClientRequest[i].second.Getstatus_code() == 0)
-                    {
-                        Response resp(ClientRequest[i].second,ClientRequest[i].first.getServer(),ClientRequest[i].first.getSocketFd());
-                        ReadyResponse.push_back(resp);
-                    }
                     else
                     {
                         ClientRequest[i].second.setLength(r);
@@ -198,19 +192,28 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                         ClientRequest[i].first.test = 0;
+                        if (ClientRequest[i].second.getFinished() == 1)
+                        {
+                            std::cout << "accept" << std::endl;
+                            Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                            ReadyResponse.push_back(resp);
+                        }
+
                     }
                 }
-                else if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &writecpy)) // response
-                { 
-                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
+            }  
+            for (u_int i = 0; i < ReadyResponse.size(); i++)
+            {
+                if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
+                {
+                    std::cout << "i = " << ReadyResponse[i].getClientFD() << std::endl;
                     std::string response;
-                    response = (char *)"HTTP/1.1 201\r\n\r\n";
-                    send(ClientRequest[i].first.getSocketFd(), response.c_str(), response.size(), 0);
-                    FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                    FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                    response = (char *)"HTTP/1.1 200 OK\r\nContent-Length: 21\r\nContent-type: text/html\r\nConnection: keep-alive\r\n\r\n<H1>Hello World!</H1>";
+                    send(ReadyResponse[i].getClientFD(), response.c_str(), response.size(), 0);
+                    FD_CLR(ReadyResponse[i].getClientFD(), &io.fdwrite);
+                    FD_SET(ReadyResponse[i].getClientFD(), &io.fdread);
                 }
             }
         }
     }
 }
-

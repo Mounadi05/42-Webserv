@@ -12,7 +12,7 @@ private:
     Server _server;
 public:
     Response();
-    Response(Request & request,Server & server, int ClientFD);
+    Response(Request  request,Server  server, int ClientFD);
     ~Response();
     int getClientFD() const;
     Request & getRequest();

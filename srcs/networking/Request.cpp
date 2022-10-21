@@ -172,6 +172,6 @@
         {
             body_length = _length;
             if (request.at("Method") == "POST")
-                write_body(str);  
+                write_body(str);
         }
     }
