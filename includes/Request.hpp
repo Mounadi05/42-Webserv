@@ -16,8 +16,7 @@ private:
     int finished;
     int send;
     int size;
-    
-
+    int connection;
 public:
     std::string buffer;
     char *body;

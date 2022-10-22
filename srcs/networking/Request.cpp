@@ -11,6 +11,7 @@ Request::Request()
     finished = 0;
     size = 0;
     send = 0;
+    connection = 0;
    
 }
 Request::~Request()
@@ -42,6 +43,7 @@ void Request::setLength(int length)
 }
 void Request::valid_request(std::string str)
 {
+    std::string hhh =  str;
     int index = 0;
     int delemiter = 0;
     std::string tmp;
@@ -57,7 +59,10 @@ void Request::valid_request(std::string str)
     tmp = str.substr(index, delemiter - index);
     request.insert(std::pair<std::string, std::string>("Version", tmp));
     if ((request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
-        first_line = 1;   
+        first_line = 1;
+    else 
+    first_line = 0;
+   
 }
 std::string Request::get_header(std::string str)
 {
@@ -167,6 +172,8 @@ void Request::handle_request(char *str)
             {
                 hold = buffer.find(delemiter, index);
                 value = buffer.substr(index, hold - index);
+                if ((int)value.find("Connection",0) != -1)
+                    connection = 1;
                 i = value.find(":", 0);
                 request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
@@ -183,6 +190,8 @@ void Request::handle_request(char *str)
                 write_body(body);
             }
         }
+        if (!connection)
+            request.insert(std::pair<std::string, std::string>("Connection","close"));
     }
     else if (done)
     {
@@ -217,6 +226,7 @@ Request &Request::operator=(const Request &req)
         this->request = req.request;
         this->first_line = req.first_line;
         this->done = req.done;
+        this->connection = req.connection;
     }
     return *this;
 }
