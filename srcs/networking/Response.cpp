@@ -16,6 +16,8 @@ Response::Response(Request  request,Server  server, int ClientFD)
     finish = 0;
     lent_re = 0;
     size = 0;
+    _send = 0;
+    done = 0;
 }
 
 Response::~Response()
@@ -35,5 +37,9 @@ Request & Response::getRequest()
 Server & Response::getServer()
 {
     return _server;
+}
+int &Response::get_done(void)
+{
+    return done;
 }
 

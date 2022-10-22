@@ -141,7 +141,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
                 {
                     char request[1025];
-                    std::cout << "i = " << ClientRequest[i].first.getSocketFd() << std::endl;
                     int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0); 
                     if (r == -1)
                     {
@@ -162,11 +161,11 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second = Request();
                         ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
-                        FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
-                        FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+                          
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
-                            std::cout << "Path" << ClientRequest[i].second.Getrequest().at("Path") <<"    in client : " << ClientRequest[i].first.getSocketFd()<< std::endl;
+                            FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
+                            FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                             Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                             ReadyResponse.push_back(resp);
                         }
@@ -178,8 +177,11 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
                 {
-                    ReadyResponse[i].handler(io.fdread,io.fdwrite);   
+                    ReadyResponse[i].handler(io.fdread,io.fdwrite); 
+                    if (ReadyResponse[i].get_done() == 1)
+                        ReadyResponse.erase(ReadyResponse.begin() + i);
                 }
+                 
             }
         }
     }

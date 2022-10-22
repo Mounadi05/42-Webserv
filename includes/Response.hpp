@@ -17,6 +17,8 @@ class Response
         int lent_re;
         int fd;
         int size;
+        int _send;
+        int done;
     public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -24,6 +26,8 @@ class Response
         int getClientFD() const;
         Request & getRequest();
         Server & getServer();
+        int &get_done(void);
+
         std::string get_extension(std::string str)
         {
             std::string tmp ;
@@ -68,6 +72,8 @@ class Response
         struct stat st;
         std::string Path = "www";
         Path = delete_space((Path + _request.Getrequest().at("Path")));
+        if (Path == "www/")
+            Path = "www/file.html";
         if (access((const char *)Path.c_str(),F_OK) != -1)
         {
             if (!finish)
@@ -78,29 +84,35 @@ class Response
                 bzero(str,1025);
                 std::string header;
                 header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + delete_space(get_type(Path))+"\r\nConnection: " + delete_space(_request.Getrequest().at("Connection"))+ "\r\n\r\n";
-                std::cout << header << std::endl;
                 write(_ClientFD,header.c_str(),header.size());
                 finish = 10;
             }
             lent = read(fd,str,1024);
-            lent_re += send(_ClientFD,str,lent,0);
-            std::cout<< "send : " << lent_re << std::endl;
-            if (lent_re >= size)
+            _send = send(_ClientFD,str,lent,0);
+            lent_re += _send;
+            if (_send == -1)
+            {
+                FD_CLR(_ClientFD,&w);
+                FD_SET(_ClientFD,&r);
+                done = 1;
+                close(fd);
+            }
+            else if (lent_re >= size)
             {
                 FD_CLR(_ClientFD,&w);
                 FD_SET(_ClientFD,&r);
                 close(fd);
-                finish = 0;
                 lent_re = 0;
+                done = 1;
             }
         }
         else
         {  
-            str = (char *)"HTTP/1.0 404 Not Found\r\n\r\n";
+            str = (char *)"HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>NOT FOUND</title></head><body> </body></html>";
             write(_ClientFD,str,strlen(str));
             lent_re = 0;
+            done = 1;
             FD_CLR(_ClientFD,&w);
-            FD_SET(_ClientFD,&r);
         }
     }
     int handler(fd_set &r , fd_set &w)

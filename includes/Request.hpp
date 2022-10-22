@@ -9,11 +9,14 @@ private:
     std::map<std::string, std::string> request;
     int header;
     int first_line;
-    int status_code;
+    int done;
     int _length;
     int body_length;
     int fd;
     int finished;
+    int send;
+    int size;
+    
 
 public:
     std::string buffer;
@@ -24,7 +27,7 @@ public:
     Request &operator=(const Request &req);
     std::map<std::string, std::string> &Getrequest(void);
     int &Getheader(void);
-    int &Getstatus_code(void);
+    // int &Getstatus_code(void);
     int &Getfirst_line(void);
     void valid_request(std::string str);
     void check_request(char *tmp);
@@ -37,5 +40,8 @@ public:
     void open_file(void);
     void delete_space(std::string &str);
     int &getFinished();
+    int &get_send(void);
+    int &get_size(void);
+
 };
 #endif
