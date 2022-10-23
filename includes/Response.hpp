@@ -35,10 +35,18 @@ class Response
     void send_data(fd_set &r , fd_set &w)
     {
         struct stat st;
-        std::string Path = "www";
-        Path = delete_space((Path + _request.Getrequest().at("Path")));
-        if (Path == "www/")
-            Path = "www/file.html";
+        std::string Path = "";
+        std::string pathtosearch = delete_space((_request.Getrequest().at("Path")));
+        for (size_t i = 0; i < _server.getLocations().size(); i++)
+        {
+            if (_server.getLocations()[i].getLocationPath() == pathtosearch)
+                Path = delete_space(_server.getLocations()[i].getRoot() + pathtosearch);
+        }
+        std::cout << Path << std::endl;
+        // Path = delete_space((Path + _request.Getrequest().at("Path")));
+        // if (Path == "www/")
+        //     Path = "www/file.html";
+        while(1);
         if (is_Valide(r,w))
         {
             if (is_Unauthorize(r,w))

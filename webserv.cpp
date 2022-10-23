@@ -15,6 +15,9 @@ int main(int argc, char **argv)
     else if (argc == 1)
     {
         conf.SetConfigFile("./config.d/default.conf");
+        // conf.parse();
+        // conf.print_servers();
+        // while(1);
         io.SetupServers(conf);
     }
     else
