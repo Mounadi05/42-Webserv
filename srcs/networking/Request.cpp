@@ -41,6 +41,12 @@ void Request::setLength(int length)
 {
     _length = length;
 }
+void Request::init_map()
+{
+    request.insert(std::pair<std::string, std::string>("Version", ""));
+    request.insert(std::pair<std::string, std::string>("Path", ""));
+    request.insert(std::pair<std::string, std::string>("Method", ""));
+}
 void Request::valid_request(std::string str)
 {
     std::string hhh =  str;
@@ -58,11 +64,8 @@ void Request::valid_request(std::string str)
     delemiter = str.find("\r\n", index + 1);
     tmp = str.substr(index, delemiter - index);
     request.insert(std::pair<std::string, std::string>("Version", tmp));
-    if ((request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
+    if (!(request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
         first_line = 1;
-    else 
-    first_line = 0;
-   
 }
 std::string Request::get_header(std::string str)
 {
@@ -107,6 +110,7 @@ void Request::check_request(char *tmp)
             buffer = get_header(check);
             valid_request(buffer);
             get_body(tmp);
+            first_line = 1;
         }
         else if ((int)check.find("\r\n", 0) != -1)
         {

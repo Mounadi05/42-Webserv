@@ -41,6 +41,8 @@ public:
     int &getFinished();
     int &get_send(void);
     int &get_size(void);
+    void init_map(void);
+
 
 };
 #endif

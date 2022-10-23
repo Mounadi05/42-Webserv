@@ -37,10 +37,12 @@ Server & Response::getServer()
 {
     return _server;
 }
+
 int &Response::get_done(void)
 {
     return done;
 }
+
 std::string Response::get_extension(std::string str)
 {
     std::string tmp ;
@@ -54,6 +56,7 @@ std::string Response::get_extension(std::string str)
     }
     return tmp;
 }
+
 std::string Response::delete_space(std::string str)
 {   
     for(int i = 0; str[i]; i++)
@@ -61,25 +64,62 @@ std::string Response::delete_space(std::string str)
             str.erase(i,1);
     return str;
 }
+
 std::string Response::get_type(std::string path)
 {
     std::string tmp = get_extension(path);
-    std::string str;
-    std::ifstream file;
-    file.open("www/mime.types") ;
-    while(getline(file,str))
-    {
-        if ((int)str.find(tmp,0) != -1 )
-        {
-            str = str.substr(0,str.find("|",0));
-            return str;
-        }
-        str.clear();
-    }
+    for(int i = 0; i < (int) _server.getmime_types().size(); i++)
+        if ((int)_server.getmime_types()[i].find(tmp,0) != -1)
+            return _server.getmime_types()[i].substr(0,_server.getmime_types()[i].find("|",0));
     return path;
 }
+
 int Response::handler(fd_set &r , fd_set &w)
 {
     send_data(r,w);
+    return 1;
+}
+
+int Response::is_Valide(fd_set &r , fd_set &w)
+{
+
+    std::string Method = _request.Getrequest().at("Method");
+    std::string Version = _request.Getrequest().at("Version");
+    if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE"
+    && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK"
+    && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" &&Method!= "PROPFIND"&& Method != "VIEW"
+    && Version != "HTTP/1.1"&& Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
+    {
+        std::string message=(char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
+        send(_ClientFD,message.c_str(),message.size(),0);
+        FD_CLR(_ClientFD,&w);
+        FD_SET(_ClientFD,&r);
+        done = 1;
+        return 0;
+    }
+    return 1;
+}
+int Response::is_Unauthorize(fd_set &r , fd_set &w)
+{
+    std::string Method = _request.Getrequest().at("Method");
+    std::string Version = _request.Getrequest().at("Version");
+    if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
+    {
+        std::string message=(char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
+        send(_ClientFD,message.c_str(),message.size(),0);
+        FD_CLR(_ClientFD,&w);
+        FD_SET(_ClientFD,&r);
+        done = 1;
+        return 0;
+    }
+    if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
+    {
+        std::string message=(char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
+        send(_ClientFD,message.c_str(),message.size(),0);
+        FD_CLR(_ClientFD,&w);
+        FD_SET(_ClientFD,&r);
+        done = 1;
+        return 0;
+    }
     return 1;
 }
