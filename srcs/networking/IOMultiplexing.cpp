@@ -90,6 +90,7 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
     {
         sock.setSocketFd(usedfd);
     }
+
     return (0);
 }
 
@@ -136,7 +137,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             for (size_t j = 0; j < servers.size(); j++)
             {
                 int fdserver = servers[j].getSocket().getSocketFd();
-                std::cout << fdserver << std::endl;
+                // std::cout << fdserver << std::endl;
                 if (FD_ISSET(fdserver, &readcpy))
                 {
                     Client newC;

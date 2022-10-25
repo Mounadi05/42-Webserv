@@ -1,0 +1,4 @@
+GET https://overseer.1337.ma/api/log_times/ytaya?start_date=2022-10-01&end_date=2022-10-19
+
+accept: text/csv
+Authorization: cada1ee5f41819fdb55752f86618f9bbcdcc29914e5e3a91fefd53d8ebdea894

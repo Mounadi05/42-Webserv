@@ -32,21 +32,29 @@ class Response
         int handler(fd_set &r , fd_set &w);
         int is_Valide(fd_set &r , fd_set &w);
         int is_Unauthorize(fd_set &r , fd_set &w);
-    void send_data(fd_set &r , fd_set &w)
+
+        std::string valide_location_path(std::string path)
+        {
+            // struct stat st;
+            std::string ret = "404";
+            for (size_t i = 0; i < _server.getLocations().size(); i++)
+            {
+                if (_server.getLocations()[i].getLocationPath() == path)
+                {
+                    ret = delete_space(_server.getLocations()[i].getRoot());
+                    if (_server.getLocations()[i].getIndex()[0] != "")
+                        ret += "/" + _server.getLocations()[i].getIndex()[0];
+                    else
+                        ret += path;
+                }
+            }
+            return ret;
+        }
+
+    void send_data(fd_set &r , fd_set &w, std::string Path)
     {
         struct stat st;
-        std::string Path = "";
-        std::string pathtosearch = delete_space((_request.Getrequest().at("Path")));
-        for (size_t i = 0; i < _server.getLocations().size(); i++)
-        {
-            if (_server.getLocations()[i].getLocationPath() == pathtosearch)
-                Path = delete_space(_server.getLocations()[i].getRoot() + pathtosearch);
-        }
-        std::cout << Path << std::endl;
-        // Path = delete_space((Path + _request.Getrequest().at("Path")));
-        // if (Path == "www/")
-        //     Path = "www/file.html";
-        while(1);
+
         if (is_Valide(r,w))
         {
             if (is_Unauthorize(r,w))
