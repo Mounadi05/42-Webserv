@@ -18,5 +18,7 @@
 #include "Request.hpp"
 #include <map>
 #include "Response.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #endif

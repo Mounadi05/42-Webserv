@@ -3,6 +3,44 @@
 #include <climits>
 
 
+#define FILE 0
+#define DIRECTORY 1
+
+int defineFileType(std::string pathToResource) // stackOverFlow Thank you
+{
+    struct stat s;
+    if (stat(pathToResource.c_str(), &s) == 0)
+    {
+        if (s.st_mode & S_IFDIR)
+        {
+            // a directory
+            return DIRECTORY;
+        }
+        else if (s.st_mode & S_IFREG)
+        {
+            // a regular file
+            return FILE;
+        }
+    }
+    return -1;
+}
+
+int isForbiddenResource(std::string resource)
+{
+    if (resource == FILE) // resource is a file
+    {
+        // check with access function
+        if (access(resource, R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
+            return 1;
+        return 0;
+    }
+    else if (resource == DIRECTORY) // resource is a directory
+    {
+        
+    }
+    return 1; // should be always forbidden unless permission's are cheked !!?
+}
+
 int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
 {
     std::string blockMaxBodySize = locationBlock.getClientMaxBodySize();

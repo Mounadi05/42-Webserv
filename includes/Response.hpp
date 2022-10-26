@@ -4,6 +4,7 @@
 #include "Request.hpp"
 #include "Server.hpp"
 #include <sys/stat.h>
+#include <string.h>
 class Response
 {
     private:
