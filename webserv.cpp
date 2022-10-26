@@ -1,7 +1,87 @@
-
-
 #include "includes/Webserv.hpp"
 #include <math.h>
+#include <climits>
+
+
+int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
+{
+    std::string blockMaxBodySize = locationBlock.getClientMaxBodySize();
+    std::string serverMaxBodySize = server.getClientMaxBodySize();
+    if (blockMaxBodySize.length() != 0)
+    {
+        if ( contentLengthRequested > std::stoi(blockMaxBodySize))
+            return 1;
+        else
+            return 0;
+    }
+    else
+    {
+        if (serverMaxBodySize.length() != 0)
+        {
+            if ( contentLengthRequested > std::stoi(server.getClientMaxBodySize()))
+                return 1;
+            else
+                return 0;
+        }
+    }
+    return 0;
+}
+
+int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod)
+{
+    std::vector<std::string> blockMethods = locationBlock.getAllowedMethods();
+    std::vector<std::string> serverMethods = server.getAllowedMethods();
+
+    if (blockMethods.size() != 0)
+    {
+        for (size_t i = 0; i < blockMethods.size(); i++)
+        {
+            if (blockMethods[i] == requestedMethod)
+                return 1;
+        }
+        return 0;
+    }
+    else
+    {
+        if (serverMethods.size() != 0)
+        {
+            for (size_t i = 0; i < serverMethods.size(); i++)
+            {
+                if (serverMethods[i] == requestedMethod)
+                    return 1;
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int	defineLocation(std::vector<Location> location, std::string uriPath)
+{
+	std::string locationMatch;
+	int			indexMatch = -1;
+
+	for (size_t i = 0; i < location.size(); i++)
+	{
+		locationMatch = uriPath;
+		if (location[i].getLocationPath() == uriPath)
+			return i;
+		while (locationMatch.length() != 0)
+		{
+			if (locationMatch.find_last_of("/") == locationMatch.npos)
+				break;
+			if (locationMatch.find_last_of("/") + 1 != locationMatch.size())
+				locationMatch.erase(locationMatch.find_last_of("/") + 1);
+			else
+				locationMatch.erase(locationMatch.find_last_of("/"));
+			if (locationMatch == location[i].getLocationPath())
+				break;
+		}
+        if (locationMatch.length() != 0)
+            indexMatch = i;
+    }
+	return indexMatch;
+}
 
 int main(int argc, char **argv)
 {
@@ -18,9 +98,29 @@ int main(int argc, char **argv)
         // conf.parse();
         // conf.print_servers();
         // while(1);
-        io.SetupServers(conf);
+        
     }
     else
         conf.SetConfigFile(argv[1]);
+    //io.SetupServers(conf);
+    conf.parse();
+    
+    std::vector<Server> servers = conf.getServers();
+    std::vector<Location> locations = servers[0].getLocations();
+    
+    for (size_t j = 0 ; j < locations.size(); j++)
+    {
+        std::cout << "location_" << j << std::endl;
+        std::cout << " " << locations[j].getLocationPath() << std::endl;
+    }
+
+    int index = defineLocation(locations, "/images/index.html");
+    std::cout << index << std::endl;
+
+    int isAllowed = isAllowedMethod(servers[0], locations[index], "POST");
+    std::cout << "allowedMethod : " << isAllowed << std::endl;
+
+    int isPayloadLarge = isPayloadTooLarge(servers[0], locations[index], 1337);
+    std::cout <<"Payload :" << isPayloadLarge << std::endl;
     return 0;
 }
