@@ -153,17 +153,14 @@ int	defineLocation(std::vector<Location> location, std::string uriPath)
 std::string setFullPath(Server server, std::string uriPath)
 {
     std::string fullPath;
-    std::string serverRoot = server.getRoot();
+    std::string rootPath;
     int locationIndex = defineLocation(server.getLocations(), uriPath);
-    std::string locationRoot = server.getLocations()[locationIndex].getRoot();
-    if (locationRoot.empty() == false)
-    {
-        fullPath = locationRoot + uriPath;
-    }
+
+    if (server.getLocations()[locationIndex].getLocationPath().empty() == false)
+        rootPath = server.getLocations()[locationIndex].getRoot();
     else
-    {
-        fullPath = serverRoot + uriPath;
-    }
+        rootPath = server.getRoot();
+    fullPath = rootPath + uriPath.erase(0, server.getLocations()[locationIndex].getLocationPath().size());
     return fullPath;
 }
 
@@ -198,7 +195,7 @@ int main(int argc, char **argv)
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
 
-    int deleteStatus = deleteRequest("/etc/tmpFile");
-    std::cout << "Status : " << deleteStatus << std::endl;
+    std::string path = setFullPath(servers[0], "/gym-website-template");
+    std::cout << path << std::endl;
     return 0;
 }
