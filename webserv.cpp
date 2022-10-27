@@ -149,7 +149,7 @@ int	defineLocation(std::vector<Location> location, std::string uriPath)
 }
 
 
-// not sure if this is working
+// working as long as we stick to config defined rules in root directive and location path 
 std::string setFullPath(Server server, std::string uriPath)
 {
     std::string fullPath;
@@ -162,6 +162,56 @@ std::string setFullPath(Server server, std::string uriPath)
         rootPath = server.getRoot();
     fullPath = rootPath + uriPath.erase(0, server.getLocations()[locationIndex].getLocationPath().size());
     return fullPath;
+}
+
+int shouldListIndexes(Server server, int locationIndex)
+{
+    int autoIndexOn;
+    if (server.getLocations()[locationIndex].getAutoIndex().empty() == false)
+    {
+        if (server.getLocations()[locationIndex].getAutoIndex().compare("on") == 0)
+            return 1;
+        return 0;
+    }
+    else if (server.getAutoIndex().empty() == false)
+    {
+        if (server.getAutoIndex().compare("on") == 0) // depends on how it was written in the config file capitalize or not
+            return 1;
+        return 0;
+    }
+    return 0;
+}
+
+// not completed should find a way to store the path of status code found
+int checkIfshouldUseDefaultErrorPage(Server server, int locationIndex, std::string statusCode)
+{
+    std::vector<std::string, std::string> serverErrorPages = server.getErrorPages();
+    std::vector<std::string, std::string> locationBlockErrorPages = server.getLocations()[locationIndex].getErrorPages(); 
+    if (locationBlockErrorPages.size() != 0)
+    {
+        for (size_t i = 0; i < locationBlockErrorPages.size(); i++)
+        {
+            if (locationBlockErrorPages[i].first.compare(statusCode) == 0)
+            {
+                // here i should find a way to define the path to the error page
+                return 1;
+            }
+        }
+        return 0;
+    }
+    else if (serverErrorPages.size() != 0)
+    {
+        for (size_t i = 0; i < serverErrorPages.size() ; i++)
+        {
+            if (serverErrorPages[i].first.compare(statusCode) == 0)
+            {
+                // here i should find a way to define the path to the error page
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -195,7 +245,7 @@ int main(int argc, char **argv)
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
 
-    std::string path = setFullPath(servers[0], "/gym-website-template");
-    std::cout << path << std::endl;
+    std::string example = "/Ping-Pong";
+    std::cout << example[example.size() - 1] << std::endl;
     return 0;
 }
