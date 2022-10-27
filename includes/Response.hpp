@@ -37,7 +37,9 @@ class Response
         int is_Valide(fd_set &r , fd_set &w); // check for bad request
         int is_unsupportedVersion(fd_set &r, fd_set &w); // check for http version
         int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
-
+        int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested);
+        int defineFileType(std::string pathToResource);
+        int shouldListIndexes(Server server, int locationIndex);
         
         //this fuction should be removed
         //int is_Unauthorize(fd_set &r , fd_set &w);

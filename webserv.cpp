@@ -6,24 +6,7 @@
 #define FILE 0
 #define DIRECTORY 1
 
-int defineFileType(std::string pathToResource) // stackOverFlow Thank you
-{
-    struct stat s;
-    if (stat(pathToResource.c_str(), &s) == 0)
-    {
-        if (s.st_mode & S_IFDIR)
-        {
-            // a directory
-            return DIRECTORY;
-        }
-        else if (s.st_mode & S_IFREG)
-        {
-            // a regular file
-            return FILE;
-        }
-    }
-    return -1;
-}
+
 
 // notFinished depending if we should delete a directory or not
 int deleteRequest(std::string pathToDelete)
@@ -68,29 +51,6 @@ int deleteRequest(std::string pathToDelete)
 //     return 1; // should be always forbidden unless permission's are cheked !!?
 // }
 
-int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
-{
-    std::string blockMaxBodySize = locationBlock.getClientMaxBodySize();
-    std::string serverMaxBodySize = server.getClientMaxBodySize();
-    if (blockMaxBodySize.length() != 0)
-    {
-        if ( contentLengthRequested > std::stoi(blockMaxBodySize))
-            return 1;
-        else
-            return 0;
-    }
-    else
-    {
-        if (serverMaxBodySize.length() != 0)
-        {
-            if ( contentLengthRequested > std::stoi(server.getClientMaxBodySize()))
-                return 1;
-            else
-                return 0;
-        }
-    }
-    return 0;
-}
 
 int shouldListIndexes(Server server, int locationIndex)
 {

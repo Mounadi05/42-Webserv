@@ -102,12 +102,35 @@ int Response::handler(fd_set &r, fd_set &w)
     
     // lets define the method if allowed depending on the directive allow_methods
     if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
+    {
+        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
         return -1;
+    }
+    if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Content-Length")) == 0)
+    {
+        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 81\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return -1;
+    }
+
+    // lets define access permission to the resource if forbidden or not    
+    
+    // lets define to type of the resource
+
+    // lets define if autoindex is on or off
+
+    // lets define if we should redirect the resource
     
 
-    
-
-    
+    // POST
+    // DELETE
     return 1;
 }
 
@@ -212,6 +235,66 @@ int Response::isAllowedMethod(Server server, Location locationBlock, std::string
     return 0;
 }
 
+int Response::isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
+{
+    std::string blockMaxBodySize = locationBlock.getClientMaxBodySize();
+    std::string serverMaxBodySize = server.getClientMaxBodySize();
+    if (blockMaxBodySize.length() != 0)
+    {
+        if ( contentLengthRequested > std::stoi(blockMaxBodySize))
+            return 1;
+        else
+            return 0;
+    }
+    else
+    {
+        if (serverMaxBodySize.length() != 0)
+        {
+            if ( contentLengthRequested > std::stoi(server.getClientMaxBodySize()))
+                return 1;
+            else
+                return 0;
+        }
+    }
+    return 0;
+}
+
+int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank you
+{
+    struct stat s;
+    if (stat(pathToResource.c_str(), &s) == 0)
+    {
+        if (s.st_mode & S_IFDIR)
+        {
+            // a directory
+            return DIRECTORY;
+        }
+        else if (s.st_mode & S_IFREG)
+        {
+            // a regular file
+            return FILE;
+        }
+    }
+    return -1;
+}
+
+int Response::shouldListIndexes(Server server, int locationIndex)
+{
+    int autoIndexOn;
+    if (server.getLocations()[locationIndex].getAutoIndex().empty() == false)
+    {
+        if (server.getLocations()[locationIndex].getAutoIndex().compare("on") == 0)
+            return 1;
+        return 0;
+    }
+    else if (server.getAutoIndex().empty() == false)
+    {
+        if (server.getAutoIndex().compare("on") == 0) // depends on how it was written in the config file capitalize or not
+            return 1;
+        return 0;
+    }
+    return 0;
+}
 // this should be two seperate function one for not implemented METHOD and the other for not supported http version
 // for the implemented method.  every location block has different allowed methods and the server can also define a general context
 // int Response::is_Unauthorize(fd_set &r, fd_set &w)
