@@ -3,6 +3,7 @@
 
 #include "Request.hpp"
 #include "Server.hpp"
+#include "Location.hpp"
 #include <sys/stat.h>
 #include <string.h>
 class Response
@@ -31,70 +32,63 @@ class Response
         std::string get_type(std::string path);
         std::string delete_space(std::string str);
         int handler(fd_set &r , fd_set &w);
-        int is_Valide(fd_set &r , fd_set &w);
-        int is_Unauthorize(fd_set &r , fd_set &w);
+        defineLocation(std::vector<Location> location, std::string uriPath);
+        setFullPath(Server server, std::string uriPath, int locationIndex);
+        int is_Valide(fd_set &r , fd_set &w); // check for bad request
+        int is_unsupportedVersion(fd_set &r, fd_set &w); // check for http version
+        int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
 
-        std::string valide_location_path(std::string path)
-        {
-            // struct stat st;
-            std::string ret = "404";
-            for (size_t i = 0; i < _server.getLocations().size(); i++)
-            {
-                if (_server.getLocations()[i].getLocationPath() == path)
-                {
-                    ret = delete_space(_server.getLocations()[i].getRoot());
-                    if (_server.getLocations()[i].getIndex()[0] != "")
-                        ret += "/" + _server.getLocations()[i].getIndex()[0];
-                    else
-                        ret += path;
-                }
-            }
-            return ret;
-        }
+        
+        //this fuction should be removed
+        //int is_Unauthorize(fd_set &r , fd_set &w);
 
-    void send_data(fd_set &r , fd_set &w, std::string Path)
-    {
-        struct stat st;
 
-        if (is_Valide(r,w))
-        {
-            if (is_Unauthorize(r,w))
-            {
-                if (access((const char *)Path.c_str(),F_OK) != -1)
-                {
-                    if (!finish)
-                    {
-                        stat((const char *)Path.c_str(), &st);
-                        size = st.st_size;
-                        fd = open(Path.c_str(),O_RDONLY);
-                        bzero(str,1025);
-                        std::string header;
-                        header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + delete_space(get_type(Path))+"\r\nConnection: " + delete_space(_request.Getrequest().at("Connection"))+ "\r\n\r\n";
-                        write(_ClientFD,header.c_str(),header.size());
-                        finish = 10;
-                    }
-                    lent = read(fd,str,1024);
-                    _send = send(_ClientFD,str,lent,0);
-                    lent_re += _send;
-                    if (_send == -1)
-                    {
-                        FD_CLR(_ClientFD,&w);
-                        FD_SET(_ClientFD,&r);
-                        done = 1;
-                        close(fd);
-                    }
-                    else if (lent_re >= size)
-                    {
-                        FD_CLR(_ClientFD,&w);
-                        FD_SET(_ClientFD,&r);
-                        close(fd);
-                        lent_re = 0;
-                        done = 1;
-                    }
-                } 
-            }
-        } 
-    }
+
+        // this function should be refactored since we should write ONE TIME AT A TIME after each select CALL
+        // talk to me il explain
+    // void send_data(fd_set &r , fd_set &w, std::string Path)
+    // {
+    //     struct stat st;
+
+    //     if (is_Valide(r,w))
+    //     {
+    //         if (is_Unauthorize(r,w))
+    //         {
+    //             if (access((const char *)Path.c_str(),F_OK) != -1)
+    //             {
+    //                 if (!finish)
+    //                 {
+    //                     stat((const char *)Path.c_str(), &st);
+    //                     size = st.st_size;
+    //                     fd = open(Path.c_str(),O_RDONLY);
+    //                     bzero(str,1025);
+    //                     std::string header;
+    //                     header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + delete_space(get_type(Path))+"\r\nConnection: " + delete_space(_request.Getrequest().at("Connection"))+ "\r\n\r\n";
+    //                     write(_ClientFD,header.c_str(),header.size());
+    //                     finish = 10;
+    //                 }
+    //                 lent = read(fd,str,1024);
+    //                 _send = send(_ClientFD,str,lent,0);
+    //                 lent_re += _send;
+    //                 if (_send == -1)
+    //                 {
+    //                     FD_CLR(_ClientFD,&w);
+    //                     FD_SET(_ClientFD,&r);
+    //                     done = 1;
+    //                     close(fd);
+    //                 }
+    //                 else if (lent_re >= size)
+    //                 {
+    //                     FD_CLR(_ClientFD,&w);
+    //                     FD_SET(_ClientFD,&r);
+    //                     close(fd);
+    //                     lent_re = 0;
+    //                     done = 1;
+    //                 }
+    //             } 
+    //         }
+    //     } 
+    // }
 };
 
 #endif

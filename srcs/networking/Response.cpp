@@ -77,26 +77,78 @@ int Response::handler(fd_set &r, fd_set &w)
 {
     std::string pathtosearch = delete_space((_request.Getrequest().at("Path")));
     std::cout << pathtosearch << std::endl;
-    std::string Path = valide_location_path(pathtosearch);
-    std::cout << Path << std::endl;
-    // it all starts here
-    //int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
-    //std::string fullPath;
-    send_data(r, w, Path);
+    
+    // before modifiying this process lets talk
+    if (is_Valide(r, w) == 0)
+        return -1;
+    if (is_unsupportedVersion() == 0)
+        return -1;
+    // bad request was cheked
+    // supported http version was cheked
 
-    // if (_request.Getrequest().at("Method") == "GET")
-    // {
-    //     handleGetRequest(); // not done yet
-    // }
-    // if (_request.Getrequest().at("Method") == "POST")
-    // {
-    //     handlePostRequest(); // not done yet
-    // }
-    // if (_request.Getrequest().at("Method") == "DELETE")
-    // {
-    //     handleDeleteRequest(); // not finished yet
-    // }
+    // if need to implement URI restricted characters or if the uri is too long it goes here
+        // if done
+    
+    // better to separate resource requested from query parameters
+        // substr pathtosearch from 0 to find('?')
+        // substr pathtosearch from find('?') to the end of string
+
+    // lets define the location block who will handle the resource.
+    int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
+    
+    // lets define the full path depending on the directive root
+
+    std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
+    
+    // lets define the method if allowed depending on the directive allow_methods
+    if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
+        return -1;
+    
+
+    
+
+    
     return 1;
+}
+
+int	Response::defineLocation(std::vector<Location> location, std::string uriPath)
+{
+	std::string locationMatch;
+	int			indexMatch = -1;
+
+	for (size_t i = 0; i < location.size(); i++)
+	{
+		locationMatch = uriPath;
+		if (location[i].getLocationPath() == uriPath)
+			return i;
+		while (locationMatch.length() != 0)
+		{
+			if (locationMatch.find_last_of("/") == locationMatch.npos)
+				break;
+			if (locationMatch.find_last_of("/") + 1 != locationMatch.size())
+				locationMatch.erase(locationMatch.find_last_of("/") + 1);
+			else
+				locationMatch.erase(locationMatch.find_last_of("/"));
+			if (locationMatch == location[i].getLocationPath())
+				break;
+		}
+        if (locationMatch.length() != 0)
+            indexMatch = i;
+    }
+	return indexMatch;
+}
+
+std::string Response::setFullPath(Server server, std::string uriPath, int locationIndex)
+{
+    std::string fullPath;
+    std::string rootPath;
+
+    if (server.getLocations()[locationIndex].getLocationPath().empty() == false)
+        rootPath = server.getLocations()[locationIndex].getRoot();
+    else
+        rootPath = server.getRoot();
+    fullPath = rootPath + uriPath.erase(0, server.getLocations()[locationIndex].getLocationPath().size());
+    return fullPath;
 }
 
 int Response::is_Valide(fd_set &r, fd_set &w)
@@ -115,19 +167,10 @@ int Response::is_Valide(fd_set &r, fd_set &w)
     }
     return 1;
 }
-int Response::is_Unauthorize(fd_set &r, fd_set &w)
+
+int Response::is_unsupportedVersion(fd_set &r, fd_set &w)
 {
-    std::string Method = _request.Getrequest().at("Method");
     std::string Version = _request.Getrequest().at("Version");
-    if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
-    {
-        std::string message = (char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-        return 0;
-    }
     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
     {
         std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
@@ -139,3 +182,60 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     }
     return 1;
 }
+
+int Response::isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod)
+{
+    std::vector<std::string> blockMethods = locationBlock.getAllowedMethods();
+    std::vector<std::string> serverMethods = server.getAllowedMethods();
+
+    if (blockMethods.size() != 0)
+    {
+        for (size_t i = 0; i < blockMethods.size(); i++)
+        {
+            if (blockMethods[i] == requestedMethod)
+                return 1;
+        }
+        return 0;
+    }
+    else
+    {
+        if (serverMethods.size() != 0)
+        {
+            for (size_t i = 0; i < serverMethods.size(); i++)
+            {
+                if (serverMethods[i] == requestedMethod)
+                    return 1;
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
+// this should be two seperate function one for not implemented METHOD and the other for not supported http version
+// for the implemented method.  every location block has different allowed methods and the server can also define a general context
+// int Response::is_Unauthorize(fd_set &r, fd_set &w)
+// {
+//     std::string Method = _request.Getrequest().at("Method");
+//     std::string Version = _request.Getrequest().at("Version");
+//     if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
+//     {
+//         std::string message = (char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
+//         send(_ClientFD, message.c_str(), message.size(), 0);
+//         FD_CLR(_ClientFD, &w);
+//         FD_SET(_ClientFD, &r);
+//         done = 1;
+//         return 0;
+//     }
+//     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
+//     {
+//         std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
+//         send(_ClientFD, message.c_str(), message.size(), 0);
+//         FD_CLR(_ClientFD, &w);
+//         FD_SET(_ClientFD, &r);
+//         done = 1;
+//         return 0;
+//     }
+//     return 1;
+// }
+
