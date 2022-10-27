@@ -79,8 +79,23 @@ int Response::handler(fd_set &r, fd_set &w)
     std::cout << pathtosearch << std::endl;
     std::string Path = valide_location_path(pathtosearch);
     std::cout << Path << std::endl;
-    // while (1);
+    // it all starts here
+    //int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
+    //std::string fullPath;
     send_data(r, w, Path);
+
+    // if (_request.Getrequest().at("Method") == "GET")
+    // {
+    //     handleGetRequest(); // not done yet
+    // }
+    // if (_request.Getrequest().at("Method") == "POST")
+    // {
+    //     handlePostRequest(); // not done yet
+    // }
+    // if (_request.Getrequest().at("Method") == "DELETE")
+    // {
+    //     handleDeleteRequest(); // not finished yet
+    // }
     return 1;
 }
 

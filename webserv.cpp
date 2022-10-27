@@ -25,21 +25,48 @@ int defineFileType(std::string pathToResource) // stackOverFlow Thank you
     return -1;
 }
 
-int isForbiddenResource(std::string resource)
+// notFinished depending if we should delete a directory or not
+int deleteRequest(std::string pathToDelete)
 {
-    if (resource == FILE) // resource is a file
+    int fileType = defineFileType(pathToDelete);
+    if (fileType == FILE)
     {
-        // check with access function
-        if (access(resource, R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
+        if (std::remove(pathToDelete.c_str()) == 0)
+        {
+            std::cout << "File Successfully deleted" << std::endl;
             return 1;
-        return 0;
+        }
+        else
+        {
+            std::cout << "File Not deleted" << std::endl;
+            return -1;
+        }
     }
-    else if (resource == DIRECTORY) // resource is a directory
+    else if (fileType == DIRECTORY)
     {
-        
+        if (std::remove(pathToDelete.c_str()) == 0)
+            return 1;
+        return -1;
     }
-    return 1; // should be always forbidden unless permission's are cheked !!?
+    return -1;
 }
+
+
+// int isForbiddenResource(std::string resource)
+// {
+//     if (resource == FILE) // resource is a file
+//     {
+//         // check with access function
+//         if (access(resource, R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
+//             return 1;
+//         return 0;
+//     }
+//     else if (resource == DIRECTORY) // resource is a directory
+//     {
+
+//     }
+//     return 1; // should be always forbidden unless permission's are cheked !!?
+// }
 
 int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
 {
@@ -121,6 +148,25 @@ int	defineLocation(std::vector<Location> location, std::string uriPath)
 	return indexMatch;
 }
 
+
+// not sure if this is working
+std::string setFullPath(Server server, std::string uriPath)
+{
+    std::string fullPath;
+    std::string serverRoot = server.getRoot();
+    int locationIndex = defineLocation(server.getLocations(), uriPath);
+    std::string locationRoot = server.getLocations()[locationIndex].getRoot();
+    if (locationRoot.empty() == false)
+    {
+        fullPath = locationRoot + uriPath;
+    }
+    else
+    {
+        fullPath = serverRoot + uriPath;
+    }
+    return fullPath;
+}
+
 int main(int argc, char **argv)
 {
     Config conf;
@@ -152,13 +198,7 @@ int main(int argc, char **argv)
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
 
-    int index = defineLocation(locations, "/images/index.html");
-    std::cout << index << std::endl;
-
-    int isAllowed = isAllowedMethod(servers[0], locations[index], "POST");
-    std::cout << "allowedMethod : " << isAllowed << std::endl;
-
-    int isPayloadLarge = isPayloadTooLarge(servers[0], locations[index], 1337);
-    std::cout <<"Payload :" << isPayloadLarge << std::endl;
+    int deleteStatus = deleteRequest("/etc/tmpFile");
+    std::cout << "Status : " << deleteStatus << std::endl;
     return 0;
 }
