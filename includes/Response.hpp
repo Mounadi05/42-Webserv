@@ -6,6 +6,7 @@
 #include "Location.hpp"
 #include <sys/stat.h>
 #include <string.h>
+#include <dirent.h>
 class Response
 {
     private:
@@ -41,6 +42,8 @@ class Response
         int defineFileType(std::string pathToResource);
         int shouldListContent(Server server, int locationIndex);
         int isForbiddenResource(std::string resource);
+        int deleteDir(std::string pathToDir);
+        int deleteRequest(std::string pathToDelete);
         
         //this fuction should be removed
         //int is_Unauthorize(fd_set &r , fd_set &w);

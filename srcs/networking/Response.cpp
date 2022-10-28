@@ -140,6 +140,27 @@ int Response::handler(fd_set &r, fd_set &w)
 
     // POST
     // DELETE
+    // we need to verify the path give to deletRequestFunction it should be correct
+    if (_request.Getrequest().at("Method").compare("DELETE") == 0)
+    {
+        if (deleteRequest(path) == 1) // when it succed to delete the resource it returns 1
+        {
+            std::string message = (char *)"HTTP/1.1 204 \r\nConnection: close\r\nContent-Length: 74\r\n\r\n<!DOCTYPE html><head><title>No Content</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+        }
+        else
+        {
+            std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return -1;
+        }
+    }
     return 1;
 }
 
@@ -284,6 +305,87 @@ int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank 
             return 0;
         }
     }
+    return -1;
+}
+
+int                     Response::deleteDir(std::string pathToDir)
+{
+    DIR                 *chosenDirToDelete;
+    struct dirent       *direntElements;
+    struct stat         stat;
+
+    if ((chosenDirToDelete = opendir(pathToDir.c_str())) == NULL) {
+        std::cout << "error oppening directory" << std::endl;
+        return -1;
+    }
+    while ((direntElements = readdir(chosenDirToDelete)))
+    {
+        if (!strcmp(direntElements->d_name, ".") ||
+        !strcmp(direntElements->d_name, ".."))
+             continue;
+        std::string new_path(pathToDir);
+        new_path.push_back('/');
+        new_path.insert(new_path.size(), direntElements->d_name);
+        if (!lstat(new_path.c_str(), &stat)) {
+            if (S_ISREG(stat.st_mode))
+            {
+                if (unlink(new_path.c_str()) == -1) {
+                    std::cout << "error unlinking a file" << std::endl;
+                    return -1;
+                }
+
+            }
+            else if (S_ISDIR(stat.st_mode)) {
+                if (deleteDir(new_path.c_str()) == -1)
+                {
+                    std::cout << "error thrown by deleteDir going recursively" << std::endl;
+                    return -1;
+                }
+            }
+        }
+    }
+    if (closedir(chosenDirToDelete) == -1) {
+        std::cout << "error closing directory" << std::endl;
+        return -1;
+    }
+    if (rmdir(pathToDir.c_str()) == -1) {
+        std::cout << "error removing empty directory" << std::endl;
+        return -1;
+    }
+    return (0);
+}
+
+int Response::deleteRequest(std::string pathToDelete)
+{
+    int fileType = defineFileType(pathToDelete);
+    if (fileType == 0) // 0 for a file type
+    {
+        if (std::remove(pathToDelete.c_str()) == 0)
+        {
+            std::cout << "File Successfully deleted" << std::endl;
+            return 1;
+        }
+        else
+        {
+            std::cout << "File Not deleted" << std::endl;
+            return -1;
+        }
+    }
+    else if (fileType == 1) // 1 for a directory type
+    {
+        if (deleteDir(pathToDelete) == 0)
+        {
+             std::cout << "Directory Successfully deleted" << std::endl;
+             return 1;
+        }
+        else 
+        {
+             std::cout << "Directory not deleted" << std::endl;
+             return -1;
+        }
+    }
+    //should handle this case properly
+    std::cout << "path not found" << std::endl;
     return -1;
 }
 

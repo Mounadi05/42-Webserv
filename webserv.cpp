@@ -5,31 +5,10 @@
 #define FILE 0
 #define DIRECTORY 1
 
-// notFinished depending if we should delete a directory or not
-// int deleteRequest(std::string pathToDelete)
-// {
-//     int fileType = defineFileType(pathToDelete);
-//     if (fileType == FILE)
-//     {
-//         if (std::remove(pathToDelete.c_str()) == 0)
-//         {
-//             std::cout << "File Successfully deleted" << std::endl;
-//             return 1;
-//         }
-//         else
-//         {
-//             std::cout << "File Not deleted" << std::endl;
-//             return -1;
-//         }
-//     }
-//     else if (fileType == DIRECTORY)
-//     {
-//         if (std::remove(pathToDelete.c_str()) == 0)
-//             return 1;
-//         return -1;
-//     }
-//     return -1;
-// }
+
+
+
+
 
 
 
