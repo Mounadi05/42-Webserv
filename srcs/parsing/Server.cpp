@@ -55,11 +55,6 @@ std::vector<Location> & Server::getLocations()
     return _locations;
 }
 
-std::vector<std::pair<std::string, std::string> > & Server::getRedirections()
-{
-    return _redirections;
-}
-
 std::vector<std::pair<std::string, std::string> > & Server::getErrorPages()
 {
     return _error_pages;
@@ -112,11 +107,6 @@ void Server::setAllowedMethods(std::vector<std::string> allowedMethods)
 void Server::setLocations(std::vector<Location> locations)
 {
     _locations = locations;
-}
-
-void Server::setRedirections(std::vector<std::pair<std::string, std::string> > redirections)
-{
-    _redirections = redirections;
 }
 
 void Server::setErrorPages(std::vector<std::pair<std::string, std::string> > error_pages)

@@ -129,6 +129,17 @@ int Response::handler(fd_set &r, fd_set &w)
         return -1;
     }
 
+        // not finished yet need to imlement redirection directive in config file
+    // if (shouldRedirectUrl(pathtosearch) == 1)
+    // {
+    //     std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
+
+    //     std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
+
+    // }
+
+
+
     // lets define access permission to the resource if forbidden or not    
     
     // lets define tthe type of the resource
@@ -161,6 +172,7 @@ int Response::handler(fd_set &r, fd_set &w)
     //         return -1;
     //     }
     // }
+    
     // DELETE
     // we need to verify the pathtosearch give to deletRequestFunction it should be correct
     if (_request.Getrequest().at("Method").compare("DELETE") == 0)
@@ -440,6 +452,17 @@ int Response::shouldListContent(Server server, int locationIndex)
     else if (server.getAutoIndex().empty() == false)
     {
         if (server.getAutoIndex().compare("on") == 0) // depends on how it was written in the config file capitalize or not
+            return 1;
+        return 0;
+    }
+    return 0;
+}
+
+int Response::shouldRedirectUrl(Location locationBlock, std::srting pathtosearch)
+{
+    if(locationBlock.getRediction().first.size() != 0)
+    {
+        if (locationBlock.getRediction().first.compare(pathtosearch) == 0)
             return 1;
         return 0;
     }

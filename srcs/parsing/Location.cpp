@@ -8,6 +8,11 @@ Location::~Location()
 {
 }
 
+std::pair<std::string, std::string> &Location::getRedirection()
+{
+    return _redirection;
+}
+
 std::string &Location::getLocationNumber()
 {
     return _locationNumber;
@@ -54,6 +59,11 @@ std::string &Location::getUploadPath()
 }
 
 // seters
+void Location::setRedirection(std::string pathToRedirect, std::string redirectToPath)
+{
+    _redirection.first = pathToRedirect;
+    _redirection.second = redirectToPath;
+}
 
 void Location::setLocationNumber(std::string locationNumber)
 {

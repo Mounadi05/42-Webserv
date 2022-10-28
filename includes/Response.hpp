@@ -44,6 +44,7 @@ class Response
         int isForbiddenResource(std::string resource);
         int deleteDir(std::string pathToDir);
         int deleteRequest(std::string pathToDelete);
+        int shouldRedirectUrl(Location locationBlock, std::srting pathtosearch);
         
         //this fuction should be removed
         //int is_Unauthorize(fd_set &r , fd_set &w);

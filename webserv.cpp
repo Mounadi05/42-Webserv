@@ -36,5 +36,18 @@ int main(int argc, char **argv)
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
 
+    std::pair<std::string, std::string> redirection;
+
+    redirection.first = "pathToRedirect";
+    redirection.second = "redirectToPath";
+
+
+    if (redirection.first.size() != 0)
+    {
+        if (redirection.first.compare("pathToRedirect") == 0)
+            std::cout << "your URL should be redirected to : " << redirection.second << std::endl;
+        else
+            std::cout << "Nothing Found GTFO" << std::endl;
+    }
     return 0;
 }
