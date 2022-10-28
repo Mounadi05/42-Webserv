@@ -32,8 +32,8 @@ class Response
         std::string get_type(std::string path);
         std::string delete_space(std::string str);
         int handler(fd_set &r , fd_set &w);
-        defineLocation(std::vector<Location> location, std::string uriPath);
-        setFullPath(Server server, std::string uriPath, int locationIndex);
+        int defineLocation(std::vector<Location> location, std::string uriPath);
+        std::string setFullPath(Server server, std::string uriPath, int locationIndex);
         int is_Valide(fd_set &r , fd_set &w); // check for bad request
         int is_unsupportedVersion(fd_set &r, fd_set &w); // check for http version
         int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server

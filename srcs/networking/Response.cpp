@@ -81,7 +81,7 @@ int Response::handler(fd_set &r, fd_set &w)
     // before modifiying this process lets talk
     if (is_Valide(r, w) == 0)
         return -1;
-    if (is_unsupportedVersion() == 0)
+    if (is_unsupportedVersion(r, w) == 0)
         return -1;
     // bad request was cheked
     // supported http version was cheked
@@ -91,13 +91,19 @@ int Response::handler(fd_set &r, fd_set &w)
     
     // better to separate resource requested from query parameters
         // substr pathtosearch from 0 to find('?')
+    std::string path;
+    std::string querys;
+    if (pathtosearch.find("?") != std::string::npos)
+    {
+        path = pathtosearch.substr(0, pathtosearch.find("?"));
+        querys = pathtosearch.erase(0, pathtosearch.find("?"));
+    }
         // substr pathtosearch from find('?') to the end of string
 
     // lets define the location block who will handle the resource.
     int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
     
     // lets define the full path depending on the directive root
-
     std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
     
     // lets define the method if allowed depending on the directive allow_methods
@@ -110,7 +116,7 @@ int Response::handler(fd_set &r, fd_set &w)
         done = 1;
         return -1;
     }
-    if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Content-Length")) == 0)
+    if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], std::stoi(_request.Getrequest().at("Content-Length"))) == 0)
     {
         std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 81\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
         send(_ClientFD, message.c_str(), message.size(), 0);
@@ -267,12 +273,12 @@ int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank 
         if (s.st_mode & S_IFDIR)
         {
             // a directory
-            return DIRECTORY;
+            return 1; 
         }
         else if (s.st_mode & S_IFREG)
         {
             // a regular file
-            return FILE;
+            return 0;
         }
     }
     return -1;
@@ -280,7 +286,6 @@ int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank 
 
 int Response::shouldListIndexes(Server server, int locationIndex)
 {
-    int autoIndexOn;
     if (server.getLocations()[locationIndex].getAutoIndex().empty() == false)
     {
         if (server.getLocations()[locationIndex].getAutoIndex().compare("on") == 0)
