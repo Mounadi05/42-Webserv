@@ -458,40 +458,15 @@ int Response::shouldListContent(Server server, int locationIndex)
     return 0;
 }
 
-int Response::shouldRedirectUrl(Location locationBlock, std::srting pathtosearch)
+int Response::shouldRedirectUrl(Location locationBlock, std::string pathtosearch)
 {
-    if(locationBlock.getRediction().first.size() != 0)
+    if(locationBlock.getRedirection().first.size() != 0)
     {
-        if (locationBlock.getRediction().first.compare(pathtosearch) == 0)
+        if (locationBlock.getRedirection().first.compare(pathtosearch) == 0)
             return 1;
         return 0;
     }
     return 0;
 }
-// this should be two seperate function one for not implemented METHOD and the other for not supported http version
-// for the implemented method.  every location block has different allowed methods and the server can also define a general context
-// int Response::is_Unauthorize(fd_set &r, fd_set &w)
-// {
-//     std::string Method = _request.Getrequest().at("Method");
-//     std::string Version = _request.Getrequest().at("Version");
-//     if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
-//     {
-//         std::string message = (char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
-//         send(_ClientFD, message.c_str(), message.size(), 0);
-//         FD_CLR(_ClientFD, &w);
-//         FD_SET(_ClientFD, &r);
-//         done = 1;
-//         return 0;
-//     }
-//     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
-//     {
-//         std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
-//         send(_ClientFD, message.c_str(), message.size(), 0);
-//         FD_CLR(_ClientFD, &w);
-//         FD_SET(_ClientFD, &r);
-//         done = 1;
-//         return 0;
-//     }
-//     return 1;
-// }
+
 

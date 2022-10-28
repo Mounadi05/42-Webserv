@@ -5,6 +5,50 @@
 #define FILE 0
 #define DIRECTORY 1
 
+std::string get_extension(std::string str)
+{
+    std::string tmp;
+    int i = str.size();
+    while (i != 0 && i--)
+    {
+        if (str[i] != '.')
+            tmp.insert(tmp.begin(), str[i]);
+        else
+            return tmp;
+    }
+    return tmp;
+}
+
+int defineFileType(std::string pathToResource) // stackOverFlow Thank you
+{
+    struct stat s;
+    if (stat(pathToResource.c_str(), &s) == 0)
+    {
+        if (s.st_mode & S_IFDIR)
+        {
+            // a directory
+            return 1; 
+        }
+        else if (s.st_mode & S_IFREG)
+        {
+            // a regular file
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int shouldInvokeCGI(std::string uriPath)
+{
+    std::string extention = get_extension(uriPath);
+
+    if (extention.compare("py") == 0 || extention.compare("php") == 0)
+    {
+        ;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     Config conf;
