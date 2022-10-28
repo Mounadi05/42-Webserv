@@ -113,16 +113,6 @@ int main(int argc, char **argv)
         std::cout << "location_" << j << std::endl;
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
-
-    std::string pathtosearch = "/index.php?param1=value1&param2=value2";
-    std::string path;
-    std::string querys;
-    if (pathtosearch.find("?") != std::string::npos)
-    {
-        path = pathtosearch.substr(0, pathtosearch.find("?"));
-        querys = pathtosearch.erase(0, pathtosearch.find("?"));
-    }
-    else
-        path = pathtosearch;
+    
     return 0;
 }

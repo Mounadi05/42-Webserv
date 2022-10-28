@@ -75,14 +75,16 @@ std::string Response::get_type(std::string path)
 int flag  = 0;
 int Response::handler(fd_set &r, fd_set &w)
 {
-    std::string pathtosearch = delete_space((_request.Getrequest().at("Path")));
-    std::cout << pathtosearch << std::endl;
+    std::string path = delete_space((_request.Getrequest().at("Path")));
+    std::cout << path << std::endl;
     
+
     // before modifiying this process lets talk
     if (is_Valide(r, w) == 0)
         return -1;
     if (is_unsupportedVersion(r, w) == 0)
         return -1;
+    
     // bad request was cheked
     // supported http version was cheked
 
@@ -91,14 +93,15 @@ int Response::handler(fd_set &r, fd_set &w)
     
     // better to separate resource requested from query parameters
         // substr pathtosearch from 0 to find('?')
-    std::string path;
+    std::string pathtosearch;
     std::string querys;
-    if (pathtosearch.find("?") != std::string::npos)
+    if (path.find("?") != std::string::npos)
     {
-        path = pathtosearch.substr(0, pathtosearch.find("?"));
-        querys = pathtosearch.erase(0, pathtosearch.find("?"));
+        pathtosearch = path.substr(0, path.find("?"));
+        querys = path.erase(0, path.find("?") + 1);
     }
-        // substr pathtosearch from find('?') to the end of string
+    else
+        pathtosearch = path;
 
     // lets define the location block who will handle the resource.
     int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
