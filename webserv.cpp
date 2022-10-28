@@ -5,13 +5,6 @@
 #define FILE 0
 #define DIRECTORY 1
 
-
-
-
-
-
-
-
 int main(int argc, char **argv)
 {
     Config conf;

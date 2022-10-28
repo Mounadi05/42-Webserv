@@ -131,7 +131,7 @@ int Response::handler(fd_set &r, fd_set &w)
 
     // lets define access permission to the resource if forbidden or not    
     
-    // lets define to type of the resource
+    // lets define tthe type of the resource
 
     // lets define if autoindex is on or off
 
@@ -139,11 +139,33 @@ int Response::handler(fd_set &r, fd_set &w)
     
 
     // POST
+    // if (_request.Getrequest().at("Method").compare("POST") == 0)
+    // {
+    //     // if post request is successfull 200 OK should be returned
+    //     if (success) // this is just an alias for the checked im still trying to figure out
+    //     {
+    //         std::string message = (char *)"HTTP/1.1 200 \r\nConnection: close\r\nContent-Length: 86\r\n\r\n<!DOCTYPE html><head><title>OK</title></head><body>Successfully Uploaded</body></html>";
+    //         send(_ClientFD, message.c_str(), message.size(), 0);
+    //         FD_CLR(_ClientFD, &w);
+    //         FD_SET(_ClientFD, &r);
+    //         done = 1;
+    //     }
+    //     // else its an internal server error ??
+    //     else
+    //     {
+    //         std::string message = (char *)"HTTP/1.1 500 \r\nConnection: close\r\nContent-Length: 85\r\n\r\n<!DOCTYPE html><head><title>Internal Server Error</title></head><body> </body></html>";
+    //         send(_ClientFD, message.c_str(), message.size(), 0);
+    //         FD_CLR(_ClientFD, &w);
+    //         FD_SET(_ClientFD, &r);
+    //         done = 1;
+    //         return -1;
+    //     }
+    // }
     // DELETE
-    // we need to verify the path give to deletRequestFunction it should be correct
+    // we need to verify the pathtosearch give to deletRequestFunction it should be correct
     if (_request.Getrequest().at("Method").compare("DELETE") == 0)
     {
-        if (deleteRequest(path) == 1) // when it succed to delete the resource it returns 1
+        if (deleteRequest(pathtosearch) == 1) // when it succed to delete the resource it returns 1
         {
             std::string message = (char *)"HTTP/1.1 204 \r\nConnection: close\r\nContent-Length: 74\r\n\r\n<!DOCTYPE html><head><title>No Content</title></head><body> </body></html>";
             send(_ClientFD, message.c_str(), message.size(), 0);
