@@ -2,11 +2,8 @@
 #include <math.h>
 #include <climits>
 
-
 #define FILE 0
 #define DIRECTORY 1
-
-
 
 // notFinished depending if we should delete a directory or not
 // int deleteRequest(std::string pathToDelete)
@@ -35,53 +32,6 @@
 // }
 
 
-// int isForbiddenResource(std::string resource)
-// {
-//     if (resource == FILE) // resource is a file
-//     {
-//         // check with access function
-//         if (access(resource, R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
-//             return 1;
-//         return 0;
-//     }
-//     else if (resource == DIRECTORY) // resource is a directory
-//     {
-
-//     }
-//     return 1; // should be always forbidden unless permission's are cheked !!?
-// }
-
-// not completed should find a way to store the path of status code found
-// int checkIfshouldUseDefaultErrorPage(Server server, int locationIndex, std::string statusCode)
-// {
-//     std::vector<std::string, std::string> serverErrorPages = server.getErrorPages();
-//     std::vector<std::string, std::string> locationBlockErrorPages = server.getLocations()[locationIndex].getErrorPages(); 
-//     if (locationBlockErrorPages.size() != 0)
-//     {
-//         for (size_t i = 0; i < locationBlockErrorPages.size(); i++)
-//         {
-//             if (locationBlockErrorPages[i].first.compare(statusCode) == 0)
-//             {
-//                 // here i should find a way to define the path to the error page
-//                 return 1;
-//             }
-//         }
-//         return 0;
-//     }
-//     else if (serverErrorPages.size() != 0)
-//     {
-//         for (size_t i = 0; i < serverErrorPages.size() ; i++)
-//         {
-//             if (serverErrorPages[i].first.compare(statusCode) == 0)
-//             {
-//                 // here i should find a way to define the path to the error page
-//                 return 1;
-//             }
-//         }
-//         return 0;
-//     }
-//     return 0;
-// }
 
 int main(int argc, char **argv)
 {
@@ -113,6 +63,6 @@ int main(int argc, char **argv)
         std::cout << "location_" << j << std::endl;
         std::cout << " " << locations[j].getLocationPath() << std::endl;
     }
-    
+
     return 0;
 }

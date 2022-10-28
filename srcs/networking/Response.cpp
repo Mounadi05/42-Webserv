@@ -287,7 +287,25 @@ int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank 
     return -1;
 }
 
-int Response::shouldListIndexes(Server server, int locationIndex)
+// not yet finished , should define if ressource is accessible if it is a directory
+int Response::isForbiddenResource(std::string resource)
+{
+    int fileType = defineFileType(resource);
+    if (fileType == 0) // resource is a file
+    {
+        // check with access function
+        if (access(resource.c_str(), R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
+            return 1;
+        return 0;
+    }
+    else if (fileType == 1 && _request.Getrequest().at("Method").compare("GET") == 0) // resource is a directory
+    {
+        ;
+    }
+    return 0; // should be always forbidden unless permission's are cheked !!? or not
+}
+
+int Response::shouldListContent(Server server, int locationIndex)
 {
     if (server.getLocations()[locationIndex].getAutoIndex().empty() == false)
     {
