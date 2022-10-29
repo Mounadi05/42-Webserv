@@ -19,6 +19,7 @@ Response::Response(Request request, Server server, int ClientFD)
 
 Response::~Response()
 {
+
 }
 
 int Response::getClientFD() const
@@ -101,57 +102,87 @@ int Response::handler(fd_set &r, fd_set &w)
     if (isBadRequest() == 0)
     {
         this->_statusCode = 400;
-        return -1;
+        craftErrorPage("Bad Request", 400);
+        return (sendResponse());
     }
     if (is_notImplemented() == 0)
     {
         this->_statusCode = 501;
-        return -1;
+        craftErrorPage("Method Not Implemented", 501);
+        return (sendResponse());
     }
     if (is_unsupportedVersion() == 0)
     {
         this->_statusCode = 505;
-        return -1;
-    }    
-    
-    // lets define the full path depending on the directive root
+        craftErrorPage("HTTP version unsupported", 505);
+        return(sendResponse());
+    } 
     std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
-    
-    // just in case url entered is not a file with extention and doesnt end with  '/'
+
     if (defineFileType(fullPath) == 1)
     {
         if (fullPath[fullPath.size() - 1] != '/')
             fullPath.append("/");
     }
     std::cout << "full path constructed : " << fullPath <<std::endl;
-    // lets define the method if allowed depending on the directive allow_methods
     if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
     {
         this->_statusCode = 405;
-        return -1;
+        craftErrorPage("Method Not Allowed", 405);
+        return(sendResponse());
     }
-    std::cout << "allowed method checked" << std::endl;
-    if (isForbiddenResource(path, locationIndex) == 0)
+    
+    if (shouldRedirectUrl(_server.getLocations()[locationIndex], pathtosearch) == 1)
     {
-        this->_statusCode = 403;
-        return -1;
+        std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
+
+        std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
+        this->_statusCode = 301;
     }
+    int status;
+    if ((status = isForbiddenResource(path, locationIndex)) >= 0)
+    {
+        if (status == 0)
+        {
+            int found = 0;
+            // i should append index
+            for (size_t i = 0; i < _server.getLocations()[locationIndex].getIndex().size(); i++)
+            {
+                if (access(path.c_str(), R_OK) == 0)
+                {
+                    path.append(_server.getLocations()[locationIndex].getIndex()[i]);
+                    found = 1;
+                    break;
+                }
+            }
+            if (found == 0)
+            {
+                this->_statusCode = 404;
+                craftErrorPage("Not Found", 404);
+                return(sendResponse());
+            }
+        }
+        if (status == 1)
+        {
+            this->_statusCode = 403;
+            craftErrorPage("Forbidden", 403);
+            return(sendResponse());
+        }
+        if (status == 2)
+        {
+            // i should list content of DIR
+            ;
+        }
+    }
+    
+
     // if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], we need the value of the content length) == 0)
     // {
     //     this->_statusCode = 413;
-    //     return -1;
-    // }
-        // not finished yet need to imlement redirection directive in config file
-    // if (shouldRedirectUrl(pathtosearch) == 1)
-    // {
-    //     std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
-
-    //     std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
-    //      this->_statusCode = 301 or 302 or 307;
+    //     craftErrorPage("Payload Too Large", 413);
+    //     return(sendResponse());
     // }
 
-    
-    
     // lets define access permission to the resource if forbidden or not    
     
     // lets define if autoindex is on or off
@@ -159,31 +190,41 @@ int Response::handler(fd_set &r, fd_set &w)
     // lets define if we should redirect the resource
     
 
-    // POST
+    //POST
     // if (_request.Getrequest().at("Method").compare("POST") == 0)
     // {
     //     // if post request is successfull 200 OK should be returned
     //     if (success) // this is just an alias for the checked im still trying to figure out
+    //     {
     //         this->_statusCode = 200;
+    //         craftResponse("./responsePages/ok.html", "OK", 200);
+    //         return(sendResponse());
+    //     }    
     //     else
     //     {
     //         this->_statusCode = 500;  
-    //         return -1;
+    //         craftErrorPage("Internal Server Error", 500);
+    //         return(sendResponse());   
     //     }
     // }
     
     // DELETE
     // we need to verify the pathtosearch give to deletRequestFunction it should be correct
-    if (_request.Getrequest().at("Method").compare("DELETE") == 0)
-    {
-        if (deleteRequest(pathtosearch) == 1) // when it succed to delete the resource it returns 1
-            this->_statusCode = 204;
-        else
-        {
-            this->_statusCode = 404;
-            return -1;
-        }
-    }
+    // if (_request.Getrequest().at("Method").compare("DELETE") == 0)
+    // {
+    //     if (deleteRequest(pathtosearch) == 1) // when it succed to delete the resource it returns 1
+    //     {
+    //         this->_statusCode = 204;
+    //         craftResponse("./responsePages/noContent.html", "No Content", 204);
+    //         return(sendResponse());
+    //     }
+    //     else
+    //     {
+    //         this->_statusCode = 404;
+    //         craftErrorPage("Not Found", 404);
+    //         return(sendResponse());
+    //     }
+    // }
     std::cout << "i am hereeeeee" << std::endl;
     return 1;
 }
@@ -192,17 +233,58 @@ int Response::sendResponse()
 {
     return 0;
 }
-void Response::craftResponse(std::string path, std::string msg, size_t statusCode)
+// std::string Response::defineMimeType(std::vector<std::string> mimeTypes, std::string path)
+// {
+//     for (size_t i = 0; i < mimeTypes.size())
+// }
+
+void Response::craftResponse(std::string path, std::string msg, size_t statusCode, bool isError)
 {
-    (void)path;
-    (void)msg;
-    (void)statusCode;
+    (void)isError;
     
+    std::fstream _responseFile;
+    std::vector<std::string> mimeTypes = _server.getmime_types();
+    //std::string type = defineMimeType(mimeTypes, path);
+    int sizeOfFile = (int)getSizeOfFile(path);
     
+    _responseFile.open("./tmp/responseFile.txt", std::ios::out);
+ 
     // set first line
-    // set content type
+    _responseFile << "HTTP/1.1 ";
+    _responseFile << statusCode;
+    _responseFile << " " + msg;
+    _responseFile << "\r\n";
+    
+    //set content type
+    _responseFile << "Content-Type: ";
+    _responseFile << "text/html"; // should be the return of defineMimeType()
+    _responseFile << "\r\n";
+    
     // set content length
+    _responseFile << "Content-Length: ";
+    _responseFile << sizeOfFile;
+    _responseFile << "\r\n";
+    
     // set body
+    std::string     line;
+    std::ifstream   readFromFile(path);
+
+    if (!readFromFile.is_open())
+            return ;
+    _responseFile << "\r\n";
+
+    while (std::getline(readFromFile, line))
+    {
+        _responseFile << line;
+        if (!readFromFile.eof())
+            _responseFile << "\n";
+    }
+
+    // close Openned Files
+    if (readFromFile.is_open())
+        readFromFile.close();
+    if (_responseFile.is_open())
+        _responseFile.close();
 }
 
 void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
@@ -227,7 +309,7 @@ void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
     else if (statusCode == 404)
         errorPagePath = "./errorPages/notFound.html";
     
-    craftResponse(errorPagePath, errorPageMsg, statusCode);
+    craftResponse(errorPagePath, errorPageMsg, statusCode, true);
 }
 
 int	Response::defineLocation(std::vector<Location> location, std::string uriPath)
@@ -460,7 +542,8 @@ int Response::isForbiddenResource(std::string resource, int locationIndex)
         // check with access function
         if (access(resource.c_str(), R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
             return 1;
-        return 0;
+        else
+            return 0;
     }
     else if (fileType == 1 && _request.Getrequest().at("Method").compare("GET") == 0) // resource is a directory
     {
@@ -469,20 +552,26 @@ int Response::isForbiddenResource(std::string resource, int locationIndex)
         if (indexes.size() == 0 && shouldListContent(_server, locationIndex) == 1)
         {
             if (access(resource.c_str(), R_OK) == 0) // i should list content here
-                return 0;
+                return 2;
             else
                 return 1; // no access rights return of access is -1
         }
-        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 0)
-        {
-            
-        }
         if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 1)
         {
-           
+           if (access(resource.c_str(), R_OK) == 0) // i should list content
+                return 2;
+            else
+                return 1;
+        }
+        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 0)
+        {
+            if (access(resource.c_str(), R_OK) == 0) // i should append an index to serve
+                return 0;
+            else
+                return 1;
         }
     }
-    return 0; // should be always forbidden unless permission's are cheked !!? or not
+    return 1; // should be always forbidden unless permission's are cheked !!? or not
 }
 
 int Response::shouldListContent(Server server, int locationIndex)
@@ -513,4 +602,17 @@ int Response::shouldRedirectUrl(Location locationBlock, std::string pathtosearch
     return 0;
 }
 
+size_t Response::getSizeOfFile(std::string file) // thank you tutorialpoints again
+{
+    size_t start;
+    size_t end;
+    std::ifstream myfile (file);
+    
+    start = myfile.tellg();
+    myfile.seekg (0, std::ios::end);
+    end = myfile.tellg();
+    myfile.close();
+    
+    return (end - start);
+}
 

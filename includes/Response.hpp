@@ -7,6 +7,9 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <dirent.h>
+#include <iostream>
+#include <fstream>
+
 class Response
 {
     private:
@@ -54,8 +57,9 @@ class Response
         int         deleteDir(std::string pathToDir);
         int         deleteRequest(std::string pathToDelete);
         void        craftErrorPage(std::string errorMsg, size_t statusCode);
-        void        craftResponse(std::string path, std::string msg, size_t statusCode);
+        void        craftResponse(std::string path, std::string msg, size_t statusCode, bool isError);
         int         sendResponse();
+        size_t      getSizeOfFile(std::string file);
 
         // this function should be refactored
         // talk to me il explain
