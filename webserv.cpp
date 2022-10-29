@@ -68,30 +68,18 @@ int main(int argc, char **argv)
     }
     else
         conf.SetConfigFile(argv[1]);
-    //io.SetupServers(conf);
     conf.parse();
+    io.SetupServers(conf);
     
-    std::vector<Server> servers = conf.getServers();
-    std::vector<Location> locations = servers[0].getLocations();
+    // std::vector<Server> servers = conf.getServers();
+    // std::vector<Location> locations = servers[0].getLocations();
     
-    for (size_t j = 0 ; j < locations.size(); j++)
-    {
-        std::cout << "location_" << j << std::endl;
-        std::cout << " " << locations[j].getLocationPath() << std::endl;
-    }
+    // for (size_t j = 0 ; j < locations.size(); j++)
+    // {
+    //     std::cout << "location_" << j << std::endl;
+    //     std::cout << " " << locations[j].getLocationPath() << std::endl;
+    // }
 
-    std::pair<std::string, std::string> redirection;
-
-    redirection.first = "pathToRedirect";
-    redirection.second = "redirectToPath";
-
-
-    if (redirection.first.size() != 0)
-    {
-        if (redirection.first.compare("pathToRedirect") == 0)
-            std::cout << "your URL should be redirected to : " << redirection.second << std::endl;
-        else
-            std::cout << "Nothing Found GTFO" << std::endl;
-    }
+    
     return 0;
 }

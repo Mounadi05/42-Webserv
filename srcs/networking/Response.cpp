@@ -15,7 +15,6 @@ Response::Response(Request request, Server server, int ClientFD)
     lent_re = 0;
     size = 0;
     _send = 0;
-    done = 0;
 }
 
 Response::~Response()
@@ -35,11 +34,6 @@ Request &Response::getRequest()
 Server &Response::getServer()
 {
     return _server;
-}
-
-int &Response::get_done(void)
-{
-    return done;
 }
 
 std::string Response::get_extension(std::string str)
@@ -64,6 +58,22 @@ std::string Response::delete_space(std::string str)
     return str;
 }
 
+std::string Response::extractQueryParams(std::string path)
+{
+    std::string pathtosearch; 
+    if (path.find("?") != std::string::npos)
+    {
+        pathtosearch = path.substr(0, path.find("?"));
+        this->queryParams = path.erase(0, path.find("?") + 1);
+    }
+    else
+    {
+        this->queryParams = "";
+        pathtosearch = path;
+    }
+    return pathtosearch;
+}
+
 std::string Response::get_type(std::string path)
 {
     std::string tmp = get_extension(path);
@@ -73,77 +83,76 @@ std::string Response::get_type(std::string path)
     return path;
 }
 int flag  = 0;
+
 int Response::handler(fd_set &r, fd_set &w)
 {
     std::string path = delete_space((_request.Getrequest().at("Path")));
     std::cout << path << std::endl;
-    
 
-    // before modifiying this process lets talk
-    if (is_Valide(r, w) == 0)
-        return -1;
-    if (is_unsupportedVersion(r, w) == 0)
-        return -1;
-    
-    // bad request was cheked
-    // supported http version was cheked
-
-    // if need to implement URI restricted characters or if the uri is too long it goes here
-        // if done
-    
-    // better to separate resource requested from query parameters
-        // substr pathtosearch from 0 to find('?')
-    std::string pathtosearch;
-    std::string querys;
-    if (path.find("?") != std::string::npos)
-    {
-        pathtosearch = path.substr(0, path.find("?"));
-        querys = path.erase(0, path.find("?") + 1);
-    }
-    else
-        pathtosearch = path;
-
+    std::string pathtosearch = extractQueryParams(path);
     // lets define the location block who will handle the resource.
     int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
+        // if no location block is found i will be handle by  the  location /
+    (void)r;
+    (void)w;    
+
+    // before modifiying this process lets talk
+    if (isBadRequest() == 0)
+    {
+        this->_statusCode = 400;
+        return -1;
+    }
+    if (is_notImplemented() == 0)
+    {
+        this->_statusCode = 501;
+        return -1;
+    }
+    if (is_unsupportedVersion() == 0)
+    {
+        this->_statusCode = 505;
+        return -1;
+    }    
     
     // lets define the full path depending on the directive root
     std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
     
+    // just in case url entered is not a file with extention and doesnt end with  '/'
+    if (defineFileType(fullPath) == 1)
+    {
+        if (fullPath[fullPath.size() - 1] != '/')
+            fullPath.append("/");
+    }
+    std::cout << "full path constructed : " << fullPath <<std::endl;
     // lets define the method if allowed depending on the directive allow_methods
     if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
     {
-        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
+        this->_statusCode = 405;
         return -1;
     }
-    if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], std::stoi(_request.Getrequest().at("Content-Length"))) == 0)
+    std::cout << "allowed method checked" << std::endl;
+    if (isForbiddenResource(path, locationIndex) == 0)
     {
-        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 81\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
+        this->_statusCode = 403;
         return -1;
     }
-
+    // if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], we need the value of the content length) == 0)
+    // {
+    //     this->_statusCode = 413;
+    //     return -1;
+    // }
         // not finished yet need to imlement redirection directive in config file
     // if (shouldRedirectUrl(pathtosearch) == 1)
     // {
     //     std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
 
     //     std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
-
+    //      this->_statusCode = 301 or 302 or 307;
     // }
 
-
-
+    
+    
     // lets define access permission to the resource if forbidden or not    
     
-    // lets define tthe type of the resource
-
     // lets define if autoindex is on or off
 
     // lets define if we should redirect the resource
@@ -154,21 +163,10 @@ int Response::handler(fd_set &r, fd_set &w)
     // {
     //     // if post request is successfull 200 OK should be returned
     //     if (success) // this is just an alias for the checked im still trying to figure out
-    //     {
-    //         std::string message = (char *)"HTTP/1.1 200 \r\nConnection: close\r\nContent-Length: 86\r\n\r\n<!DOCTYPE html><head><title>OK</title></head><body>Successfully Uploaded</body></html>";
-    //         send(_ClientFD, message.c_str(), message.size(), 0);
-    //         FD_CLR(_ClientFD, &w);
-    //         FD_SET(_ClientFD, &r);
-    //         done = 1;
-    //     }
-    //     // else its an internal server error ??
+    //         this->_statusCode = 200;
     //     else
     //     {
-    //         std::string message = (char *)"HTTP/1.1 500 \r\nConnection: close\r\nContent-Length: 85\r\n\r\n<!DOCTYPE html><head><title>Internal Server Error</title></head><body> </body></html>";
-    //         send(_ClientFD, message.c_str(), message.size(), 0);
-    //         FD_CLR(_ClientFD, &w);
-    //         FD_SET(_ClientFD, &r);
-    //         done = 1;
+    //         this->_statusCode = 500;  
     //         return -1;
     //     }
     // }
@@ -178,23 +176,14 @@ int Response::handler(fd_set &r, fd_set &w)
     if (_request.Getrequest().at("Method").compare("DELETE") == 0)
     {
         if (deleteRequest(pathtosearch) == 1) // when it succed to delete the resource it returns 1
-        {
-            std::string message = (char *)"HTTP/1.1 204 \r\nConnection: close\r\nContent-Length: 74\r\n\r\n<!DOCTYPE html><head><title>No Content</title></head><body> </body></html>";
-            send(_ClientFD, message.c_str(), message.size(), 0);
-            FD_CLR(_ClientFD, &w);
-            FD_SET(_ClientFD, &r);
-            done = 1;
-        }
+            this->_statusCode = 204;
         else
         {
-            std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
-            send(_ClientFD, message.c_str(), message.size(), 0);
-            FD_CLR(_ClientFD, &w);
-            FD_SET(_ClientFD, &r);
-            done = 1;
+            this->_statusCode = 404;
             return -1;
         }
     }
+    std::cout << "i am hereeeeee" << std::endl;
     return 1;
 }
 
@@ -238,35 +227,28 @@ std::string Response::setFullPath(Server server, std::string uriPath, int locati
     return fullPath;
 }
 
-int Response::is_Valide(fd_set &r, fd_set &w)
+int Response::isBadRequest()
 {
 
     std::string Method = _request.Getrequest().at("Method");
     std::string Version = _request.Getrequest().at("Version");
     if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE" && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK" && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" && Method != "PROPFIND" && Method != "VIEW" && Version != "HTTP/1.1" && Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
-    {
-        std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
         return 0;
-    }
     return 1;
 }
 
-int Response::is_unsupportedVersion(fd_set &r, fd_set &w)
+int Response::is_notImplemented()
+{
+    std::string Method = _request.Getrequest().at("Method");
+    if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
+        return 0;
+    return 1;
+}
+int Response::is_unsupportedVersion()
 {
     std::string Version = _request.Getrequest().at("Version");
     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
-    {
-        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
         return 0;
-    }
     return 1;
 }
 
@@ -424,9 +406,12 @@ int Response::deleteRequest(std::string pathToDelete)
 }
 
 // not yet finished , should define if ressource is accessible if it is a directory
-int Response::isForbiddenResource(std::string resource)
+int Response::isForbiddenResource(std::string resource, int locationIndex)
 {
+    Location locationBlock = _server.getLocations()[locationIndex];
+    std::vector<std::string> indexes = locationBlock.getIndex();
     int fileType = defineFileType(resource);
+    
     if (fileType == 0) // resource is a file
     {
         // check with access function
@@ -436,7 +421,23 @@ int Response::isForbiddenResource(std::string resource)
     }
     else if (fileType == 1 && _request.Getrequest().at("Method").compare("GET") == 0) // resource is a directory
     {
-        ;
+        if (indexes.size() == 0 && shouldListContent(_server, locationIndex) == 0)
+            return 1;
+        if (indexes.size() == 0 && shouldListContent(_server, locationIndex) == 1)
+        {
+            if (access(resource.c_str(), R_OK) == 0) // i should list content here
+                return 0;
+            else
+                return 1; // no access rights return of access is -1
+        }
+        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 0)
+        {
+            
+        }
+        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 1)
+        {
+           
+        }
     }
     return 0; // should be always forbidden unless permission's are cheked !!? or not
 }

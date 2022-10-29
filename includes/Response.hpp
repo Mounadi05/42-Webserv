@@ -13,6 +13,8 @@ class Response
         int _ClientFD;
         Request _request;
         Server _server;
+        std::string queryParams;
+        size_t _statusCode;
         char *str;
         int lent;
         int finish;
@@ -20,7 +22,6 @@ class Response
         int fd;
         int size;
         int _send;
-        int done;
     public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -28,28 +29,33 @@ class Response
         int getClientFD() const;
         Request & getRequest();
         Server & getServer();
-        int &get_done(void);
+        std::string & getQuerys() {
+            return this->queryParams;
+        };
+        size_t & getStatusCode() {
+            return this->_statusCode;
+        };
+        std::string extractQueryParams(std::string path);
         std::string get_extension(std::string str);
         std::string get_type(std::string path);
         std::string delete_space(std::string str);
         int handler(fd_set &r , fd_set &w);
         int defineLocation(std::vector<Location> location, std::string uriPath);
         std::string setFullPath(Server server, std::string uriPath, int locationIndex);
-        int is_Valide(fd_set &r , fd_set &w); // check for bad request
-        int is_unsupportedVersion(fd_set &r, fd_set &w); // check for http version
+        int isBadRequest(); // check for bad request
+        int is_unsupportedVersion(); // check for http version
+        int is_notImplemented();
         int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
         int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested);
         int defineFileType(std::string pathToResource);
         int shouldListContent(Server server, int locationIndex);
-        int isForbiddenResource(std::string resource);
+        int shouldRedirectUrl(Location locationBlock, std::string pathtosearch);
+        int isForbiddenResource(std::string resource, int locationIndex);
         int deleteDir(std::string pathToDir);
         int deleteRequest(std::string pathToDelete);
-        int shouldRedirectUrl(Location locationBlock, std::string pathtosearch);
         
 
-
-
-        // this function should be refactored since we should write ONE TIME AT A TIME after each select CALL
+        // this function should be refactored
         // talk to me il explain
     // void send_data(fd_set &r , fd_set &w, std::string Path)
     // {

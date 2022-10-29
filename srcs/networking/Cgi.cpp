@@ -86,5 +86,6 @@ void Cgi::executeCgi()
         // if everything if good after test last step
         close(this->inputFile);
         close(this->outputFile);
+        //should free the envp
     }
 }

@@ -1,8 +1,6 @@
 #include "../../includes/Webserv.hpp"
 #include <utility>
 
-#define DONE 1
-#define NOT_FINISHED 0
 
 IOMultiplexing::IOMultiplexing()
 {
@@ -196,8 +194,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
                 {
                     ReadyResponse[i].handler(io.fdread,io.fdwrite); 
-                    if (ReadyResponse[i].get_done() == 1)
-                        ReadyResponse.erase(ReadyResponse.begin() + i);
                 }
                  
             }
