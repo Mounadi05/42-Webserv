@@ -86,6 +86,8 @@ int flag  = 0;
 
 int Response::handler(fd_set &r, fd_set &w)
 {
+    (void)r;
+    (void)w;  
     std::string path = delete_space((_request.Getrequest().at("Path")));
     std::cout << path << std::endl;
 
@@ -93,8 +95,7 @@ int Response::handler(fd_set &r, fd_set &w)
     // lets define the location block who will handle the resource.
     int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
         // if no location block is found i will be handle by  the  location /
-    (void)r;
-    (void)w;    
+      
 
     // before modifiying this process lets talk
     if (isBadRequest() == 0)
@@ -185,6 +186,48 @@ int Response::handler(fd_set &r, fd_set &w)
     }
     std::cout << "i am hereeeeee" << std::endl;
     return 1;
+}
+
+int Response::sendResponse()
+{
+    return 0;
+}
+void Response::craftResponse(std::string path, std::string msg, size_t statusCode)
+{
+    (void)path;
+    (void)msg;
+    (void)statusCode;
+    
+    
+    // set first line
+    // set content type
+    // set content length
+    // set body
+}
+
+void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
+{
+    std::string errorPagePath;
+    std::string errorPageMsg = errorMsg;
+    
+    if (statusCode == 400)
+        errorPagePath = "./errorPages/badRequest.html";
+    else if (statusCode == 501)
+        errorPagePath = "./errorPages/notImplemented.html";
+    else if (statusCode == 505)
+        errorPagePath = "./errorPages/unsupportedVersion.html";
+    else if (statusCode == 405)
+        errorPagePath = "./errorPages/notAllowed.html";
+    else if (statusCode == 403)
+        errorPagePath = "./errorPages/forbidden.html";
+    else if (statusCode == 413)
+        errorPagePath = "./errorPages/payloadLarge.html";
+    else if (statusCode == 500)
+        errorPagePath = "./errorPages/internalServer.html";
+    else if (statusCode == 404)
+        errorPagePath = "./errorPages/notFound.html";
+    
+    craftResponse(errorPagePath, errorPageMsg, statusCode);
 }
 
 int	Response::defineLocation(std::vector<Location> location, std::string uriPath)

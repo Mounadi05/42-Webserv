@@ -39,21 +39,23 @@ class Response
         std::string get_extension(std::string str);
         std::string get_type(std::string path);
         std::string delete_space(std::string str);
-        int handler(fd_set &r , fd_set &w);
-        int defineLocation(std::vector<Location> location, std::string uriPath);
+        int         handler(fd_set &r , fd_set &w);
+        int         defineLocation(std::vector<Location> location, std::string uriPath);
         std::string setFullPath(Server server, std::string uriPath, int locationIndex);
-        int isBadRequest(); // check for bad request
-        int is_unsupportedVersion(); // check for http version
-        int is_notImplemented();
-        int isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
-        int isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested);
-        int defineFileType(std::string pathToResource);
-        int shouldListContent(Server server, int locationIndex);
-        int shouldRedirectUrl(Location locationBlock, std::string pathtosearch);
-        int isForbiddenResource(std::string resource, int locationIndex);
-        int deleteDir(std::string pathToDir);
-        int deleteRequest(std::string pathToDelete);
-        
+        int         isBadRequest(); // check for bad request
+        int         is_unsupportedVersion(); // check for http version
+        int         is_notImplemented();
+        int         isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
+        int         isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested);
+        int         defineFileType(std::string pathToResource);
+        int         shouldListContent(Server server, int locationIndex);
+        int         shouldRedirectUrl(Location locationBlock, std::string pathtosearch);
+        int         isForbiddenResource(std::string resource, int locationIndex);
+        int         deleteDir(std::string pathToDir);
+        int         deleteRequest(std::string pathToDelete);
+        void        craftErrorPage(std::string errorMsg, size_t statusCode);
+        void        craftResponse(std::string path, std::string msg, size_t statusCode);
+        int         sendResponse();
 
         // this function should be refactored
         // talk to me il explain
