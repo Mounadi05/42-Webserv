@@ -87,15 +87,9 @@ int flag  = 0;
 int Response::handler(fd_set &r, fd_set &w)
 {
     std::string path = delete_space((_request.Getrequest().at("Path")));
-    std::cout << path << std::endl;
-
     std::string pathtosearch = extractQueryParams(path);
-    // lets define the location block who will handle the resource.
     int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
-        // if no location block is found i will be handle by  the  location /
-      
-
-    // before modifiying this process lets talk
+    
     if (isBadRequest() == 0)
     {
         this->_statusCode = 400;
@@ -188,7 +182,6 @@ int Response::handler(fd_set &r, fd_set &w)
             ;
         }
     }
-    
 
     // if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], we need the value of the content length) == 0)
     // {
@@ -240,37 +233,12 @@ int Response::handler(fd_set &r, fd_set &w)
     //     }
     // }
     craftResponse(fullPath, "OK", 200, false);
-    std::cout << "i am here" << std::endl;
     return sendResponse(r, w);
 }
 
 int Response::sendResponse(fd_set &r , fd_set &w)
 {
-    (void)r;
-    (void)w;
-    std::fstream responseFile;
-    responseFile.open("./tmp/responseFile.txt", std::ios::in);
-
-    char responseBuffer[1024];
-    int lent_re;
-    while (!responseFile.eof())
-    {
-        lent_re = responseFile.read(responseBuffer, 1024).gcount();
-        if (lent_re == 0)
-            break ;
-        if((_send = send(_ClientFD, &responseBuffer, lent_re, 0)) <= 0)
-            break;
-    }
-    if (_send == -1)
-    {
-        FD_CLR(_ClientFD,&w);
-        FD_SET(_ClientFD,&r);
-        done = -1;
-        responseFile.close();
-        return -1;
-    }
-    done = 1;
-    return 1;
+    
 }
 
 void Response::craftResponse(std::string path, std::string msg, size_t statusCode, bool isError)
@@ -280,6 +248,14 @@ void Response::craftResponse(std::string path, std::string msg, size_t statusCod
     std::fstream responseFile;
     std::vector<std::string> mimeTypes = _server.getmime_types();
     std::string type = defineMimeType(mimeTypes, path);
+    
+    // if (type == "notFound")
+    // {
+    //     if (get_extension(path).compare("php") || get_extension(path).compare("py"))
+    //     {
+    //         //should get cgi
+    //     }
+    // }
     int sizeOfFile = (int)getSizeOfFile(path);
     std::cout << path << std::endl;
     std::cout << sizeOfFile << std::endl;
@@ -302,26 +278,7 @@ void Response::craftResponse(std::string path, std::string msg, size_t statusCod
     responseFile << "\r\n";
     
     // set body
-    std::string     line;
-    std::ifstream   readFromFile(path);
 
-    if (!readFromFile.is_open())
-            return ;
-    responseFile << "\r\n";
-
-    while (std::getline(readFromFile, line))
-    {
-        responseFile << line;
-        if (!readFromFile.eof())
-            responseFile << "\n";
-    }
-
-    // close Openned Files
-    if (readFromFile.is_open())
-        readFromFile.close();
-    if (responseFile.is_open())
-        responseFile.close();
-    
 }
 
 void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
