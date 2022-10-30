@@ -5,49 +5,17 @@
 #define FILE 0
 #define DIRECTORY 1
 
-std::string get_extension(std::string str)
-{
-    std::string tmp;
-    int i = str.size();
-    while (i != 0 && i--)
-    {
-        if (str[i] != '.')
-            tmp.insert(tmp.begin(), str[i]);
-        else
-            return tmp;
-    }
-    return tmp;
-}
+// int shouldInvokeCGI(std::string uriPath)
+// {
+//     std::string extention = get_extension(uriPath);
 
-int defineFileType(std::string pathToResource) // stackOverFlow Thank you
-{
-    struct stat s;
-    if (stat(pathToResource.c_str(), &s) == 0)
-    {
-        if (s.st_mode & S_IFDIR)
-        {
-            // a directory
-            return 1; 
-        }
-        else if (s.st_mode & S_IFREG)
-        {
-            // a regular file
-            return 0;
-        }
-    }
-    return -1;
-}
+//     if (extention.compare("py") == 0 || extention.compare("php") == 0)
+//     {
+//         ;
+//     }
+//     return 0;
+// }
 
-int shouldInvokeCGI(std::string uriPath)
-{
-    std::string extention = get_extension(uriPath);
-
-    if (extention.compare("py") == 0 || extention.compare("php") == 0)
-    {
-        ;
-    }
-    return 0;
-}
 
 int main(int argc, char **argv)
 {
@@ -71,14 +39,9 @@ int main(int argc, char **argv)
     conf.parse();
     io.SetupServers(conf);
     
-    // std::vector<Server> servers = conf.getServers();
-    // std::vector<Location> locations = servers[0].getLocations();
-    
-    // for (size_t j = 0 ; j < locations.size(); j++)
-    // {
-    //     std::cout << "location_" << j << std::endl;
-    //     std::cout << " " << locations[j].getLocationPath() << std::endl;
-    // }
+    std::vector<Server> servers = conf.getServers();
+    std::vector<Location> locations = servers[0].getLocations();
+    std::vector<std::string> mimes = servers[0].getmime_types();
 
     
     return 0;

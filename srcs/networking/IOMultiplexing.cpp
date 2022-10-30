@@ -193,7 +193,16 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
                 {
-                    ReadyResponse[i].handler(io.fdread,io.fdwrite); 
+                    ReadyResponse[i].handler(io.fdread,io.fdwrite);
+                    if (ReadyResponse[i].get_done() == -1)
+                        ReadyResponse.erase(ReadyResponse.begin() + i);
+                    else if (ReadyResponse[i].get_done() == 1)
+                    {
+                        // we should instantiate a new request with the same client if connection is keep alive
+                        FD_CLR(ReadyResponse[i].getClientFD(),&io.fdwrite);
+                        FD_SET(ReadyResponse[i].getClientFD(),&io.fdread);
+                        ReadyResponse.erase(ReadyResponse.begin() + i)   
+                    }
                 }
                  
             }

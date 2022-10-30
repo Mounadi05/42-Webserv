@@ -12,7 +12,6 @@ Response::Response(Request request, Server server, int ClientFD)
     str = new char[1025];
     lent = 0;
     finish = 0;
-    lent_re = 0;
     size = 0;
     _send = 0;
 }
@@ -87,8 +86,6 @@ int flag  = 0;
 
 int Response::handler(fd_set &r, fd_set &w)
 {
-    (void)r;
-    (void)w;  
     std::string path = delete_space((_request.Getrequest().at("Path")));
     std::cout << path << std::endl;
 
@@ -103,70 +100,87 @@ int Response::handler(fd_set &r, fd_set &w)
     {
         this->_statusCode = 400;
         craftErrorPage("Bad Request", 400);
-        return (sendResponse());
+        return (sendResponse(r, w));
     }
     if (is_notImplemented() == 0)
     {
         this->_statusCode = 501;
         craftErrorPage("Method Not Implemented", 501);
-        return (sendResponse());
+        return (sendResponse(r, w));
     }
     if (is_unsupportedVersion() == 0)
     {
         this->_statusCode = 505;
         craftErrorPage("HTTP version unsupported", 505);
-        return(sendResponse());
+        return(sendResponse(r, w));
     } 
     std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
 
-    if (defineFileType(fullPath) == 1)
+    int type = defineFileType(fullPath);
+    if (type == 1)
     {
         if (fullPath[fullPath.size() - 1] != '/')
             fullPath.append("/");
     }
+    else if (type == -1)
+    {
+        this->_statusCode = 404;
+        craftErrorPage("Not Found", 404);
+        return(sendResponse(r, w));
+    }
+
     std::cout << "full path constructed : " << fullPath <<std::endl;
     if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
     {
         this->_statusCode = 405;
         craftErrorPage("Method Not Allowed", 405);
-        return(sendResponse());
+        return(sendResponse(r, w));
     }
     
-    if (shouldRedirectUrl(_server.getLocations()[locationIndex], pathtosearch) == 1)
-    {
-        std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
+    // if (shouldRedirectUrl(_server.getLocations()[locationIndex], pathtosearch) == 1)
+    // {
+    //     std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
 
-        std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
-        this->_statusCode = 301;
-    }
+    //     std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
+    //     this->_statusCode = 301;
+    // }
+    
     int status;
-    if ((status = isForbiddenResource(path, locationIndex)) >= 0)
+    if ((status = isForbiddenResource(fullPath, locationIndex)) >= 0)
     {
         if (status == 0)
         {
-            int found = 0;
-            // i should append index
-            for (size_t i = 0; i < _server.getLocations()[locationIndex].getIndex().size(); i++)
+            if (defineFileType(fullPath) != 0)
             {
-                if (access(path.c_str(), R_OK) == 0)
+                int found = 0;
+                for (size_t i = 0; i < _server.getLocations()[locationIndex].getIndex().size(); i++)
                 {
-                    path.append(_server.getLocations()[locationIndex].getIndex()[i]);
-                    found = 1;
-                    break;
+                    if (access(fullPath.c_str(), R_OK) == 0)
+                    {
+                        fullPath.append(_server.getLocations()[locationIndex].getIndex()[i]);
+                        found = 1;
+                        break;
+                    }
+                    else
+                    {
+                        this->_statusCode = 403;
+                        craftErrorPage("Forbidden", 403);
+                        return(sendResponse(r, w));    
+                    }
                 }
-            }
-            if (found == 0)
-            {
-                this->_statusCode = 404;
-                craftErrorPage("Not Found", 404);
-                return(sendResponse());
+                if (found == 0)
+                {
+                    this->_statusCode = 404;
+                    craftErrorPage("Not Found", 404);
+                    return(sendResponse(r, w));
+                }
             }
         }
         if (status == 1)
         {
             this->_statusCode = 403;
             craftErrorPage("Forbidden", 403);
-            return(sendResponse());
+            return(sendResponse(r, w));
         }
         if (status == 2)
         {
@@ -180,7 +194,7 @@ int Response::handler(fd_set &r, fd_set &w)
     // {
     //     this->_statusCode = 413;
     //     craftErrorPage("Payload Too Large", 413);
-    //     return(sendResponse());
+    //     return(sendResponse(r, w));
     // }
 
     // lets define access permission to the resource if forbidden or not    
@@ -212,7 +226,7 @@ int Response::handler(fd_set &r, fd_set &w)
     // we need to verify the pathtosearch give to deletRequestFunction it should be correct
     // if (_request.Getrequest().at("Method").compare("DELETE") == 0)
     // {
-    //     if (deleteRequest(pathtosearch) == 1) // when it succed to delete the resource it returns 1
+    //     if (deleteRequest(fullPath) == 1) // when it succed to delete the resource it returns 1
     //     {
     //         this->_statusCode = 204;
     //         craftResponse("./responsePages/noContent.html", "No Content", 204);
@@ -225,45 +239,67 @@ int Response::handler(fd_set &r, fd_set &w)
     //         return(sendResponse());
     //     }
     // }
-    std::cout << "i am hereeeeee" << std::endl;
-    return 1;
+    craftResponse(fullPath, "OK", 200, false);
+    std::cout << "i am here" << std::endl;
+    return sendResponse(r, w);
 }
 
-int Response::sendResponse()
+int Response::sendResponse(fd_set &r , fd_set &w)
 {
-    return 0;
+    (void)r;
+    (void)w;
+    std::fstream responseFile;
+    responseFile.open("./tmp/responseFile.txt", std::ios::in);
+
+    char responseBuffer[1024];
+    int lent_re;
+    while (!responseFile.eof())
+    {
+        lent_re = responseFile.read(responseBuffer, 1024).gcount();
+        if (lent_re == 0)
+            break ;
+        if((_send = send(_ClientFD, &responseBuffer, lent_re, 0)) <= 0)
+            break;
+    }
+    if (_send == -1)
+    {
+        FD_CLR(_ClientFD,&w);
+        FD_SET(_ClientFD,&r);
+        done = -1;
+        responseFile.close();
+        return -1;
+    }
+    done = 1;
+    return 1;
 }
-// std::string Response::defineMimeType(std::vector<std::string> mimeTypes, std::string path)
-// {
-//     for (size_t i = 0; i < mimeTypes.size())
-// }
 
 void Response::craftResponse(std::string path, std::string msg, size_t statusCode, bool isError)
 {
     (void)isError;
     
-    std::fstream _responseFile;
+    std::fstream responseFile;
     std::vector<std::string> mimeTypes = _server.getmime_types();
-    //std::string type = defineMimeType(mimeTypes, path);
+    std::string type = defineMimeType(mimeTypes, path);
     int sizeOfFile = (int)getSizeOfFile(path);
-    
-    _responseFile.open("./tmp/responseFile.txt", std::ios::out);
+    std::cout << path << std::endl;
+    std::cout << sizeOfFile << std::endl;
+    responseFile.open("./tmp/responseFile.txt", std::ios::out);
  
     // set first line
-    _responseFile << "HTTP/1.1 ";
-    _responseFile << statusCode;
-    _responseFile << " " + msg;
-    _responseFile << "\r\n";
+    responseFile << "HTTP/1.1 ";
+    responseFile << statusCode;
+    responseFile << " " + msg;
+    responseFile << "\r\n";
     
     //set content type
-    _responseFile << "Content-Type: ";
-    _responseFile << "text/html"; // should be the return of defineMimeType()
-    _responseFile << "\r\n";
+    responseFile << "Content-Type: ";
+    responseFile << type;
+    responseFile << "\r\n";
     
     // set content length
-    _responseFile << "Content-Length: ";
-    _responseFile << sizeOfFile;
-    _responseFile << "\r\n";
+    responseFile << "Content-Length: ";
+    responseFile << sizeOfFile;
+    responseFile << "\r\n";
     
     // set body
     std::string     line;
@@ -271,20 +307,21 @@ void Response::craftResponse(std::string path, std::string msg, size_t statusCod
 
     if (!readFromFile.is_open())
             return ;
-    _responseFile << "\r\n";
+    responseFile << "\r\n";
 
     while (std::getline(readFromFile, line))
     {
-        _responseFile << line;
+        responseFile << line;
         if (!readFromFile.eof())
-            _responseFile << "\n";
+            responseFile << "\n";
     }
 
     // close Openned Files
     if (readFromFile.is_open())
         readFromFile.close();
-    if (_responseFile.is_open())
-        _responseFile.close();
+    if (responseFile.is_open())
+        responseFile.close();
+    
 }
 
 void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
@@ -308,8 +345,24 @@ void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
         errorPagePath = "./errorPages/internalServer.html";
     else if (statusCode == 404)
         errorPagePath = "./errorPages/notFound.html";
-    
+
     craftResponse(errorPagePath, errorPageMsg, statusCode, true);
+}
+
+std::string Response::defineMimeType(std::vector<std::string> mimeTypes, std::string path)
+{   
+    std::string extention = get_extension(path);
+    std::string tosearch = extention.append(";");
+    std::string contentType;
+    for (size_t i = 0; i < mimeTypes.size(); i++)
+    {
+        if (mimeTypes[i].find(tosearch) != std::string::npos)
+        {
+            contentType = mimeTypes[i].substr(0, mimeTypes[i].find("|"));
+            return contentType;
+        }
+    }
+    return "notFound";
 }
 
 int	Response::defineLocation(std::vector<Location> location, std::string uriPath)
@@ -571,6 +624,7 @@ int Response::isForbiddenResource(std::string resource, int locationIndex)
                 return 1;
         }
     }
+    
     return 1; // should be always forbidden unless permission's are cheked !!? or not
 }
 

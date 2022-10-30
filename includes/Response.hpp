@@ -20,8 +20,8 @@ class Response
         size_t _statusCode;
         char *str;
         int lent;
+        int done;
         int finish;
-        int lent_re;
         int fd;
         int size;
         int _send;
@@ -37,6 +37,9 @@ class Response
         };
         size_t & getStatusCode() {
             return this->_statusCode;
+        };
+        int & get_done() {
+            return done;
         };
         std::string extractQueryParams(std::string path);
         std::string get_extension(std::string str);
@@ -58,9 +61,9 @@ class Response
         int         deleteRequest(std::string pathToDelete);
         void        craftErrorPage(std::string errorMsg, size_t statusCode);
         void        craftResponse(std::string path, std::string msg, size_t statusCode, bool isError);
-        int         sendResponse();
+        int         sendResponse(fd_set &r , fd_set &w);
         size_t      getSizeOfFile(std::string file);
-
+        std::string defineMimeType(std::vector<std::string> mimeTypes, std::string path);
         // this function should be refactored
         // talk to me il explain
     // void send_data(fd_set &r , fd_set &w, std::string Path)
