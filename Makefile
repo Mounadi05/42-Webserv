@@ -7,11 +7,12 @@ src = 	./srcs/parsing/Config.cpp\
 		./srcs/networking/Clinet.cpp\
 		./srcs/networking/Request.cpp\
 		./srcs/networking/Response.cpp\
+		listDir.cpp\
 
 main = webserv.cpp
 obj = $(src:.cpp=.o)
 
-CPP = c++ -Wall -Wextra -Werror 
+CPP = c++ -Wall -Wextra -Werror -std=c++98 -fsanitize=address -g
 
 $(Name): $(obj)
 	$(CPP) $(main) -o $(Name) $(obj)

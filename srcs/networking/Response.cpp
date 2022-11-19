@@ -1,7 +1,10 @@
 #include "../../includes/Webserv.hpp"
 
+std::string generate_autoindex(std::string path , std::string root);
+
 Response::Response()
 {
+    _state = INIT;
 }
 
 Response::Response(Request request, Server server, int ClientFD)
@@ -12,13 +15,16 @@ Response::Response(Request request, Server server, int ClientFD)
     str = new char[1025];
     lent = 0;
     finish = 0;
+    lent_re = 0;
     size = 0;
     _send = 0;
+    done = 0;
+    _state = INIT;
+    _lindex = -1;
 }
 
 Response::~Response()
 {
-
 }
 
 int Response::getClientFD() const
@@ -34,6 +40,11 @@ Request &Response::getRequest()
 Server &Response::getServer()
 {
     return _server;
+}
+
+int &Response::get_done(void)
+{
+    return done;
 }
 
 std::string Response::get_extension(std::string str)
@@ -58,22 +69,6 @@ std::string Response::delete_space(std::string str)
     return str;
 }
 
-std::string Response::extractQueryParams(std::string path)
-{
-    std::string pathtosearch; 
-    if (path.find("?") != std::string::npos)
-    {
-        pathtosearch = path.substr(0, path.find("?"));
-        this->queryParams = path.erase(0, path.find("?") + 1);
-    }
-    else
-    {
-        this->queryParams = "";
-        pathtosearch = path;
-    }
-    return pathtosearch;
-}
-
 std::string Response::get_type(std::string path)
 {
     std::string tmp = get_extension(path);
@@ -82,548 +77,381 @@ std::string Response::get_type(std::string path)
             return _server.getmime_types()[i].substr(0, _server.getmime_types()[i].find("|", 0));
     return path;
 }
-int flag  = 0;
 
+std::string stringtrim(std::string str)
+{
+    int i = 0;
+    int j = str.size() - 1;
+    while (str[i] == ' ' || str[i] == '\t')
+        i++;
+    while (str[j] == ' ' || str[j] == '\t')
+        j--;
+    return str.substr(i, j - i + 1);
+}
+
+int Response::defineLocation(std::string path)
+{
+    for (size_t i = 0; i < _server.getLocations().size(); i++)
+    {
+        if (path == _server.getLocations()[i].getLocationPath())
+        {
+            _lindex = i;
+            return (1);
+        }
+    }
+    return (0);
+}
+
+int Response::checkMethod(void)
+{
+    std::string method = stringtrim(_request.Getrequest().at("Method"));
+    for (size_t i = 0; i < _server.getLocations()[_lindex].getAllowedMethods().size(); i++)
+    {
+        if (method == _server.getLocations()[_lindex].getAllowedMethods()[i])
+            return (1);
+    }
+    return (0);
+}
+
+void send_error(int fd, int code, bool Default = true, std::string path = "")
+{
+    (void)path;
+    std::string msg;
+    std::string resp;
+
+    if (Default)
+    {
+        if (code == 400)
+            msg = "Bad Request";
+        else if (code == 403)
+            msg = "Forbidden";
+        else if (code == 404)
+            msg = "Not Found";
+        else if (code == 405)
+            msg = "Method Not Allowed";
+        else if (code == 413)
+            msg = "Payload Too Large";
+        else if (code == 501)
+            msg = "Not Implemented";
+        else if (code == 505)
+            msg = "HTTP Version Not Supported";
+
+        resp = "HTTP/1.1 " + std::to_string(code) + " " + msg + "\r\n";
+        resp += "Content-Type: text/html\r\n";
+        resp += "Content-Length: " + std::to_string(msg.size()) + "\r\n";
+        resp += "Connection: close\r\n";
+        resp += "\r\n";
+        resp += msg;
+        send(fd, resp.c_str(), resp.size(), 0);
+    }
+    else
+    {
+        std::ifstream file(path);
+        std::string headers;
+        if (file.is_open())
+        {
+            std::string line;
+            while (getline(file, line))
+                resp += line;
+            file.close();
+            headers = "HTTP/1.1 " + std::to_string(code) + " " + msg + "\r\n";
+            headers += "Content-Type: text/html\r\n";
+            headers += "Content-Length: " + std::to_string(resp.size()) + "\r\n";
+            headers += "Connection: close\r\n";
+            headers += "\r\n";
+            headers += resp;
+            send(fd, headers.c_str(), headers.size(), 0);
+        }
+    }
+}
+
+std::string Response::DefineErrorPath(std::string ErrorCode)
+{
+    for (size_t i = 0; i < _server.getErrorPages().size(); i++)
+    {
+        if (ErrorCode == _server.getErrorPages()[i].first)
+            return (_server.getErrorPages()[i].second);
+    }
+    return "";
+}
+
+int Response::sendResponse(fd_set &r, fd_set &w, std::string filePath)
+{
+    (void)r;
+    (void)w;
+    std::string path;
+
+    if (_state == DENIEDMETHOD)
+    {
+        path = this->DefineErrorPath("405");
+        if (path == "")
+            send_error(_ClientFD, DENIEDMETHOD);
+        else
+            send_error(_ClientFD, DENIEDMETHOD, false, path);
+    }
+    else if (_state == NOTFOUND)
+    {
+        path = this->DefineErrorPath("404");
+        if (path != "" && access(path.c_str(), F_OK) != -1)
+            send_error(_ClientFD, NOTFOUND, false, path);
+        else
+            send_error(_ClientFD, NOTFOUND);
+    }
+    else if (_state == UNAUTHORIZED)
+    {
+        path = this->DefineErrorPath("401");
+        if (path == "")
+            send_error(_ClientFD, UNAUTHORIZED);
+        else
+            send_error(_ClientFD, UNAUTHORIZED, false, path);
+    }
+    (void)filePath;
+    FD_CLR(_ClientFD, &w);
+    FD_SET(_ClientFD, &r);
+    return (0);
+}
+
+int is_file(std::string path)
+{
+    struct stat buf;
+    if (stat(path.c_str(), &buf) == -1)
+        return (0);
+    if (S_ISREG(buf.st_mode))
+        return (1);
+    return (0);
+}
+
+int is_dir(std::string path)
+{
+    struct stat buf;
+    if (stat(path.c_str(), &buf) == -1)
+        return (0);
+    if (S_ISDIR(buf.st_mode))
+        return (1);
+    return (0);
+}
+
+std::string check_index(std::string path, std::vector<std::string> index)
+{
+    for (size_t i = 0; i < index.size(); i++)
+    {
+        if (is_file(path + "/" + index[i]))
+            return (path + "/" + index[i]);
+    }
+    return "";
+}
+
+int check_autoindex(std::string value)
+{
+    if (value == "on")
+        return (1);
+    return (0);
+}
+
+std::string defineType(std::string path)
+{
+    std::string type;
+    std::string ext;
+    size_t pos = path.find_last_of(".");
+    if (pos != std::string::npos)
+        ext = path.substr(pos + 1);
+    if (ext == "html")
+        type = "text/html";
+    else if (ext == "css")
+        type = "text/css";
+    else if (ext == "js")
+        type = "text/javascript";
+    else if (ext == "jpg")
+        type = "image/jpeg";
+    else if (ext == "jpeg")
+        type = "image/jpeg";
+    else if (ext == "png")
+        type = "image/png";
+    else if (ext == "gif")
+        type = "image/gif";
+    else if (ext == "svg")
+        type = "image/svg+xml";
+    else if (ext == "ico")
+        type = "image/x-icon";
+    else if (ext == "mp3")
+        type = "audio/mpeg";
+    else if (ext == "mp4")
+        type = "video/mp4";
+    else if (ext == "pdf")
+        type = "application/pdf";
+    else if (ext == "zip")
+        type = "application/zip";
+    else if (ext == "gz")
+        type = "application/gzip";
+    else if (ext == "tar")
+        type = "application/x-tar";
+    else if (ext == "txt")
+        type = "text/plain";
+    else if (ext == "xml")
+        type = "text/xml";
+    else if (ext == "json")
+        type = "application/json";
+    else if (ext == "woff")
+        type = "font/woff";
+    else if (ext == "woff2")
+        type = "font/woff2";
+    else if (ext == "eot")
+        type = "application/vnd.ms-fontobject";
+    else if (ext == "ttf")
+        type = "font/ttf";
+    else if (ext == "otf")
+        type = "font/otf";
+    else
+        type = "text/plain";
+    return type;
+}
 int Response::handler(fd_set &r, fd_set &w)
 {
-    std::string path = delete_space((_request.Getrequest().at("Path")));
-    std::string pathtosearch = extractQueryParams(path);
-    int locationIndex = defineLocation(_server.getLocations(), pathtosearch);
-    
-    if (isBadRequest() == 0)
+    (void)r;
+    (void)w;
+    std::cout << "rquest : " << _request.Getrequest().at("Path") << std::endl;
+    std::string path =  stringtrim(_request.Getrequest().at("Path"));
+    std::cout << "path : " << path << std::endl;
+    if (defineLocation(path))
     {
-        this->_statusCode = 400;
-        craftErrorPage("Bad Request", 400);
-        return (sendResponse(r, w));
-    }
-    if (is_notImplemented() == 0)
-    {
-        this->_statusCode = 501;
-        craftErrorPage("Method Not Implemented", 501);
-        return (sendResponse(r, w));
-    }
-    if (is_unsupportedVersion() == 0)
-    {
-        this->_statusCode = 505;
-        craftErrorPage("HTTP version unsupported", 505);
-        return(sendResponse(r, w));
-    } 
-    std::string fullPath = setFullPath(_server, pathtosearch, locationIndex);
-
-    int type = defineFileType(fullPath);
-    if (type == 1)
-    {
-        if (fullPath[fullPath.size() - 1] != '/')
-            fullPath.append("/");
-    }
-    else if (type == -1)
-    {
-        this->_statusCode = 404;
-        craftErrorPage("Not Found", 404);
-        return(sendResponse(r, w));
-    }
-
-    std::cout << "full path constructed : " << fullPath <<std::endl;
-    if (isAllowedMethod(_server, _server.getLocations()[locationIndex], _request.Getrequest().at("Method")) == 0)
-    {
-        this->_statusCode = 405;
-        craftErrorPage("Method Not Allowed", 405);
-        return(sendResponse(r, w));
-    }
-    
-    // if (shouldRedirectUrl(_server.getLocations()[locationIndex], pathtosearch) == 1)
-    // {
-    //     std::cout << "your URL should redirect to : " << _server.getLocations()[locationIndex].getRedirection().second << std::endl;
-
-    //     std::string newPath = _server.getLocations()[locationIndex].getRedirection().second;
-    //     this->_statusCode = 301;
-    // }
-    
-    int status;
-    if ((status = isForbiddenResource(fullPath, locationIndex)) >= 0)
-    {
-        if (status == 0)
+        std::string file = check_index(_server.getLocations()[_lindex].getRoot(), _server.getLocations()[_lindex].getIndex());
+        if (!this->checkMethod())
         {
-            if (defineFileType(fullPath) != 0)
+            this->_state = DENIEDMETHOD;
+            sendResponse(r, w);
+        }
+        if (file == "")
+        {
+            if (is_dir(_server.getLocations()[_lindex].getRoot() + path))
             {
-                int found = 0;
-                for (size_t i = 0; i < _server.getLocations()[locationIndex].getIndex().size(); i++)
+                if (check_autoindex(_server.getLocations()[_lindex].getAutoIndex()))
                 {
-                    if (access(fullPath.c_str(), R_OK) == 0)
-                    {
-                        fullPath.append(_server.getLocations()[locationIndex].getIndex()[i]);
-                        found = 1;
-                        break;
-                    }
-                    else
-                    {
-                        this->_statusCode = 403;
-                        craftErrorPage("Forbidden", 403);
-                        return(sendResponse(r, w));    
-                    }
+                    std::cout << "autoindex" << std::endl;
                 }
-                if (found == 0)
-                {
-                    this->_statusCode = 404;
-                    craftErrorPage("Not Found", 404);
-                    return(sendResponse(r, w));
-                }
+                std::cout << "autoindex on" << std::endl;
             }
         }
-        if (status == 1)
+        else
         {
-            this->_statusCode = 403;
-            craftErrorPage("Forbidden", 403);
-            return(sendResponse(r, w));
-        }
-        if (status == 2)
-        {
-            // i should list content of DIR
-            ;
-        }
-    }
-
-    // if (isPayloadTooLarge(_server, _server.getLocations()[locationIndex], we need the value of the content length) == 0)
-    // {
-    //     this->_statusCode = 413;
-    //     craftErrorPage("Payload Too Large", 413);
-    //     return(sendResponse(r, w));
-    // }
-
-    // lets define access permission to the resource if forbidden or not    
-    
-    // lets define if autoindex is on or off
-
-    // lets define if we should redirect the resource
-    
-
-    //POST
-    // if (_request.Getrequest().at("Method").compare("POST") == 0)
-    // {
-    //     // if post request is successfull 200 OK should be returned
-    //     if (success) // this is just an alias for the checked im still trying to figure out
-    //     {
-    //         this->_statusCode = 200;
-    //         craftResponse("./responsePages/ok.html", "OK", 200);
-    //         return(sendResponse());
-    //     }    
-    //     else
-    //     {
-    //         this->_statusCode = 500;  
-    //         craftErrorPage("Internal Server Error", 500);
-    //         return(sendResponse());   
-    //     }
-    // }
-    
-    // DELETE
-    // we need to verify the pathtosearch give to deletRequestFunction it should be correct
-    // if (_request.Getrequest().at("Method").compare("DELETE") == 0)
-    // {
-    //     if (deleteRequest(fullPath) == 1) // when it succed to delete the resource it returns 1
-    //     {
-    //         this->_statusCode = 204;
-    //         craftResponse("./responsePages/noContent.html", "No Content", 204);
-    //         return(sendResponse());
-    //     }
-    //     else
-    //     {
-    //         this->_statusCode = 404;
-    //         craftErrorPage("Not Found", 404);
-    //         return(sendResponse());
-    //     }
-    // }
-    craftResponse(fullPath, "OK", 200, false);
-    return sendResponse(r, w);
-}
-
-int Response::sendResponse(fd_set &r , fd_set &w)
-{
-    
-}
-
-void Response::craftResponse(std::string path, std::string msg, size_t statusCode, bool isError)
-{
-    (void)isError;
-    
-    std::fstream responseFile;
-    std::vector<std::string> mimeTypes = _server.getmime_types();
-    std::string type = defineMimeType(mimeTypes, path);
-    
-    // if (type == "notFound")
-    // {
-    //     if (get_extension(path).compare("php") || get_extension(path).compare("py"))
-    //     {
-    //         //should get cgi
-    //     }
-    // }
-    int sizeOfFile = (int)getSizeOfFile(path);
-    std::cout << path << std::endl;
-    std::cout << sizeOfFile << std::endl;
-    responseFile.open("./tmp/responseFile.txt", std::ios::out);
- 
-    // set first line
-    responseFile << "HTTP/1.1 ";
-    responseFile << statusCode;
-    responseFile << " " + msg;
-    responseFile << "\r\n";
-    
-    //set content type
-    responseFile << "Content-Type: ";
-    responseFile << type;
-    responseFile << "\r\n";
-    
-    // set content length
-    responseFile << "Content-Length: ";
-    responseFile << sizeOfFile;
-    responseFile << "\r\n";
-    
-    // set body
-
-}
-
-void Response::craftErrorPage(std::string errorMsg, size_t statusCode)
-{
-    std::string errorPagePath;
-    std::string errorPageMsg = errorMsg;
-    
-    if (statusCode == 400)
-        errorPagePath = "./errorPages/badRequest.html";
-    else if (statusCode == 501)
-        errorPagePath = "./errorPages/notImplemented.html";
-    else if (statusCode == 505)
-        errorPagePath = "./errorPages/unsupportedVersion.html";
-    else if (statusCode == 405)
-        errorPagePath = "./errorPages/notAllowed.html";
-    else if (statusCode == 403)
-        errorPagePath = "./errorPages/forbidden.html";
-    else if (statusCode == 413)
-        errorPagePath = "./errorPages/payloadLarge.html";
-    else if (statusCode == 500)
-        errorPagePath = "./errorPages/internalServer.html";
-    else if (statusCode == 404)
-        errorPagePath = "./errorPages/notFound.html";
-
-    craftResponse(errorPagePath, errorPageMsg, statusCode, true);
-}
-
-std::string Response::defineMimeType(std::vector<std::string> mimeTypes, std::string path)
-{   
-    std::string extention = get_extension(path);
-    std::string tosearch = extention.append(";");
-    std::string contentType;
-    for (size_t i = 0; i < mimeTypes.size(); i++)
-    {
-        if (mimeTypes[i].find(tosearch) != std::string::npos)
-        {
-            contentType = mimeTypes[i].substr(0, mimeTypes[i].find("|"));
-            return contentType;
+            std::cout << "file found" << std::endl;
+            int fd = open(file.c_str(), O_RDONLY);
+            if (fd == -1)
+                return (0);
+            char *buf = (char *)malloc(sizeof(char) * 1000000);
+            int ret = read(fd, buf, 1000000);
+            if (ret == -1)
+                return (0);
+            std::string resp = "HTTP/1.1 200 OK\r\n";
+            resp += "Content-Type: text/html\r\n";
+            resp += "Content-Length: " + std::to_string(ret) + "\r\n";
+            resp += "Connection: close\r\n";
+            resp += "\r\n";
+            resp += buf;
+            send(_ClientFD, resp.c_str(), resp.size(), 0);
+            free(buf);
+            close(fd);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return (1);
         }
     }
-    return "notFound";
-}
-
-int	Response::defineLocation(std::vector<Location> location, std::string uriPath)
-{
-	std::string locationMatch;
-	int			indexMatch = -1;
-
-	for (size_t i = 0; i < location.size(); i++)
-	{
-		locationMatch = uriPath;
-		if (location[i].getLocationPath() == uriPath)
-			return i;
-		while (locationMatch.length() != 0)
-		{
-			if (locationMatch.find_last_of("/") == locationMatch.npos)
-				break;
-			if (locationMatch.find_last_of("/") + 1 != locationMatch.size())
-				locationMatch.erase(locationMatch.find_last_of("/") + 1);
-			else
-				locationMatch.erase(locationMatch.find_last_of("/"));
-			if (locationMatch == location[i].getLocationPath())
-				break;
-		}
-        if (locationMatch.length() != 0)
-            indexMatch = i;
-    }
-	return indexMatch;
-}
-
-std::string Response::setFullPath(Server server, std::string uriPath, int locationIndex)
-{
-    std::string fullPath;
-    std::string rootPath;
-
-    if (server.getLocations()[locationIndex].getLocationPath().empty() == false)
-        rootPath = server.getLocations()[locationIndex].getRoot();
     else
-        rootPath = server.getRoot();
-    fullPath = rootPath + uriPath.erase(0, server.getLocations()[locationIndex].getLocationPath().size());
-    return fullPath;
+    {
+        std::cout << "search : " << stringtrim(_server.getRoot() + stringtrim(_request.Getrequest().at("Path"))) << std::endl;
+        if (is_file(stringtrim(_server.getRoot()) + stringtrim(_request.Getrequest().at("Path"))))
+        {
+            std::cout << "DBG : " << _server.getLocations()[0].getRoot() + path << std::endl;
+            std::cout << "file found" << std::endl;
+            int fd = open((_server.getLocations()[0].getRoot() + path).c_str(), O_RDONLY);
+            if (fd == -1)
+                return (0);
+            char *buf = (char *)malloc(sizeof(char) * 1000000);
+            int ret = read(fd, buf, 1000000);
+            if (ret == -1)
+                return (0);
+            std::string resp = "HTTP/1.1 200 OK\r\n";
+            // defile type
+            resp += "Content-Type: " + defineType(path) + "\r\n";
+            resp += "Content-Length: " + std::to_string(ret) + "\r\n";
+            resp += "Connection: close\r\n";
+            resp += "\r\n";
+            resp += buf;
+            send(_ClientFD, resp.c_str(), resp.size(), 0);
+            free(buf);
+            close(fd);
+            done = 1;
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            return (1);
+        }
+        else if (is_dir(_server.getLocations()[0].getRoot() + path))
+        {
+            if (check_autoindex(_server.getLocations()[0].getAutoIndex()))
+            {
+                //send response
+                std::string resp = generate_autoindex(_server.getLocations()[0].getRoot() + path , path);
+                std::string resp2 = "HTTP/1.1 200 OK\r\n";
+                resp2 += "Content-Type: text/html\r\n";
+                resp2 += "Content-Length: " + std::to_string(resp.size()) + "\r\n";
+                resp2 += "Connection: close\r\n";
+                resp2 += "\r\n";
+                resp2 += resp;
+                send(_ClientFD, resp2.c_str(), resp2.size(), 0);
+                done = 1;
+                FD_CLR(_ClientFD, &w);
+                FD_SET(_ClientFD, &r);
+            }
+        }
+        else
+        {
+            this->_state = NOTFOUND;
+            std::cout << "file not found" << std::endl;
+            sendResponse(r, w);
+            done = 1;
+            return (1);
+        }
+    }
+    return (1);
 }
 
-int Response::isBadRequest()
+int Response::is_Valide(fd_set &r, fd_set &w)
 {
 
     std::string Method = _request.Getrequest().at("Method");
     std::string Version = _request.Getrequest().at("Version");
     if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE" && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK" && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" && Method != "PROPFIND" && Method != "VIEW" && Version != "HTTP/1.1" && Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
+    {
+        std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
         return 0;
+    }
     return 1;
 }
-
-int Response::is_notImplemented()
+int Response::is_Unauthorize(fd_set &r, fd_set &w)
 {
     std::string Method = _request.Getrequest().at("Method");
-    if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
-        return 0;
-    return 1;
-}
-int Response::is_unsupportedVersion()
-{
     std::string Version = _request.Getrequest().at("Version");
-    if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
+    if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
+    {
+        std::string message = (char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
         return 0;
+    }
+    if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
+    {
+        std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return 0;
+    }
     return 1;
 }
-
-int Response::isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod)
-{
-    std::vector<std::string> blockMethods = locationBlock.getAllowedMethods();
-    std::vector<std::string> serverMethods = server.getAllowedMethods();
-
-    if (blockMethods.size() != 0)
-    {
-        for (size_t i = 0; i < blockMethods.size(); i++)
-        {
-            if (blockMethods[i] == requestedMethod)
-                return 1;
-        }
-        return 0;
-    }
-    else
-    {
-        if (serverMethods.size() != 0)
-        {
-            for (size_t i = 0; i < serverMethods.size(); i++)
-            {
-                if (serverMethods[i] == requestedMethod)
-                    return 1;
-            }
-            return 0;
-        }
-    }
-    return 0;
-}
-
-int Response::isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested)
-{
-    std::string blockMaxBodySize = locationBlock.getClientMaxBodySize();
-    std::string serverMaxBodySize = server.getClientMaxBodySize();
-    if (blockMaxBodySize.length() != 0)
-    {
-        if ( contentLengthRequested > std::stoi(blockMaxBodySize))
-            return 1;
-        else
-            return 0;
-    }
-    else
-    {
-        if (serverMaxBodySize.length() != 0)
-        {
-            if ( contentLengthRequested > std::stoi(server.getClientMaxBodySize()))
-                return 1;
-            else
-                return 0;
-        }
-    }
-    return 0;
-}
-
-int Response::defineFileType(std::string pathToResource) // stackOverFlow Thank you
-{
-    struct stat s;
-    if (stat(pathToResource.c_str(), &s) == 0)
-    {
-        if (s.st_mode & S_IFDIR)
-        {
-            // a directory
-            return 1; 
-        }
-        else if (s.st_mode & S_IFREG)
-        {
-            // a regular file
-            return 0;
-        }
-    }
-    return -1;
-}
-
-int                     Response::deleteDir(std::string pathToDir)
-{
-    DIR                 *chosenDirToDelete;
-    struct dirent       *direntElements;
-    struct stat         stat;
-
-    if ((chosenDirToDelete = opendir(pathToDir.c_str())) == NULL) {
-        std::cout << "error oppening directory" << std::endl;
-        return -1;
-    }
-    while ((direntElements = readdir(chosenDirToDelete)))
-    {
-        if (!strcmp(direntElements->d_name, ".") ||
-        !strcmp(direntElements->d_name, ".."))
-             continue;
-        std::string new_path(pathToDir);
-        new_path.push_back('/');
-        new_path.insert(new_path.size(), direntElements->d_name);
-        if (!lstat(new_path.c_str(), &stat)) {
-            if (S_ISREG(stat.st_mode))
-            {
-                if (unlink(new_path.c_str()) == -1) {
-                    std::cout << "error unlinking a file" << std::endl;
-                    return -1;
-                }
-
-            }
-            else if (S_ISDIR(stat.st_mode)) {
-                if (deleteDir(new_path.c_str()) == -1)
-                {
-                    std::cout << "error thrown by deleteDir going recursively" << std::endl;
-                    return -1;
-                }
-            }
-        }
-    }
-    if (closedir(chosenDirToDelete) == -1) {
-        std::cout << "error closing directory" << std::endl;
-        return -1;
-    }
-    if (rmdir(pathToDir.c_str()) == -1) {
-        std::cout << "error removing empty directory" << std::endl;
-        return -1;
-    }
-    return (0);
-}
-
-int Response::deleteRequest(std::string pathToDelete)
-{
-    int fileType = defineFileType(pathToDelete);
-    if (fileType == 0) // 0 for a file type
-    {
-        if (std::remove(pathToDelete.c_str()) == 0)
-        {
-            std::cout << "File Successfully deleted" << std::endl;
-            return 1;
-        }
-        else
-        {
-            std::cout << "File Not deleted" << std::endl;
-            return -1;
-        }
-    }
-    else if (fileType == 1) // 1 for a directory type
-    {
-        if (deleteDir(pathToDelete) == 0)
-        {
-             std::cout << "Directory Successfully deleted" << std::endl;
-             return 1;
-        }
-        else 
-        {
-             std::cout << "Directory not deleted" << std::endl;
-             return -1;
-        }
-    }
-    //should handle this case properly
-    std::cout << "path not found" << std::endl;
-    return -1;
-}
-
-// not yet finished , should define if ressource is accessible if it is a directory
-int Response::isForbiddenResource(std::string resource, int locationIndex)
-{
-    Location locationBlock = _server.getLocations()[locationIndex];
-    std::vector<std::string> indexes = locationBlock.getIndex();
-    int fileType = defineFileType(resource);
-    
-    if (fileType == 0) // resource is a file
-    {
-        // check with access function
-        if (access(resource.c_str(), R_OK) == -1) // check for read permission it will throw an error eventually if file doesnt exist
-            return 1;
-        else
-            return 0;
-    }
-    else if (fileType == 1 && _request.Getrequest().at("Method").compare("GET") == 0) // resource is a directory
-    {
-        if (indexes.size() == 0 && shouldListContent(_server, locationIndex) == 0)
-            return 1;
-        if (indexes.size() == 0 && shouldListContent(_server, locationIndex) == 1)
-        {
-            if (access(resource.c_str(), R_OK) == 0) // i should list content here
-                return 2;
-            else
-                return 1; // no access rights return of access is -1
-        }
-        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 1)
-        {
-           if (access(resource.c_str(), R_OK) == 0) // i should list content
-                return 2;
-            else
-                return 1;
-        }
-        if (indexes.size() != 0 && shouldListContent(_server, locationIndex) == 0)
-        {
-            if (access(resource.c_str(), R_OK) == 0) // i should append an index to serve
-                return 0;
-            else
-                return 1;
-        }
-    }
-    
-    return 1; // should be always forbidden unless permission's are cheked !!? or not
-}
-
-int Response::shouldListContent(Server server, int locationIndex)
-{
-    if (server.getLocations()[locationIndex].getAutoIndex().empty() == false)
-    {
-        if (server.getLocations()[locationIndex].getAutoIndex().compare("on") == 0)
-            return 1;
-        return 0;
-    }
-    else if (server.getAutoIndex().empty() == false)
-    {
-        if (server.getAutoIndex().compare("on") == 0) // depends on how it was written in the config file capitalize or not
-            return 1;
-        return 0;
-    }
-    return 0;
-}
-
-int Response::shouldRedirectUrl(Location locationBlock, std::string pathtosearch)
-{
-    if(locationBlock.getRedirection().first.size() != 0)
-    {
-        if (locationBlock.getRedirection().first.compare(pathtosearch) == 0)
-            return 1;
-        return 0;
-    }
-    return 0;
-}
-
-size_t Response::getSizeOfFile(std::string file) // thank you tutorialpoints again
-{
-    size_t start;
-    size_t end;
-    std::ifstream myfile (file);
-    
-    start = myfile.tellg();
-    myfile.seekg (0, std::ios::end);
-    end = myfile.tellg();
-    myfile.close();
-    
-    return (end - start);
-}
-

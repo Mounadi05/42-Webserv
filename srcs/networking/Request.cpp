@@ -1,4 +1,5 @@
 #include "../../includes/Webserv.hpp"
+
 Request::Request()
 {
     _length = 0;
@@ -6,6 +7,7 @@ Request::Request()
     first_line = 0;
     done = 0;
     body = new char[1025];
+    bzero(body,1024);
     body_length = 0;
     fd = 0;
     finished = 0;
@@ -29,6 +31,7 @@ int &Request::Getheader(void)
 // {
 //     return status_code;
 // }
+
 int &Request::Getfirst_line(void)
 {
     return first_line;
@@ -182,7 +185,7 @@ void Request::handle_request(char *str)
                 request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
                 index = hold + 2;
-                std::cout << value << std::endl;
+                // std::cout << value << std::endl;
             } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
             finished = 1;
             if (request.at("Method") == "POST")
@@ -203,6 +206,8 @@ void Request::handle_request(char *str)
         if (request.at("Method") == "POST")
             write_body(str);
     }
+    _path = request.at("Path");
+    _method = request.at("Method");
 }
 
 int &Request::getFinished()
@@ -231,6 +236,29 @@ Request &Request::operator=(const Request &req)
         this->first_line = req.first_line;
         this->done = req.done;
         this->connection = req.connection;
+        this->_path = req._path;
+        this->_method = req._method;
     }
     return *this;
+}
+
+std::ostream & operator<<(std::ostream & out ,Request & other){
+    out << "========== request begin =============" << std::endl;
+    out << "headers : " << std::endl;
+    for (std::map<std::string, std::string>::iterator  it = other.Getrequest().begin() ; it != other.Getrequest().end() ; it++)
+        out << it->first << ":" << it->second << std::endl;
+    if ( other.Getrequest().at("Method")== "POST")
+    {
+        out << "body : " << std::endl;
+        out << std::string(other.body,other.getLength()) << std::endl;
+    }
+    out << "========== request end =============" << std::endl;
+    return out;
+}
+
+std::string Request::getPath() const{
+    return this->_path;
+}
+std::string Request::getMethod() const{
+    return this->_method;
 }

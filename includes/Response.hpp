@@ -3,28 +3,24 @@
 
 #include "Request.hpp"
 #include "Server.hpp"
-#include "Location.hpp"
 #include <sys/stat.h>
-#include <string.h>
-#include <dirent.h>
-#include <iostream>
-#include <fstream>
-
 class Response
 {
     private:
         int _ClientFD;
         Request _request;
         Server _server;
-        std::string queryParams;
-        size_t _statusCode;
         char *str;
         int lent;
-        int done;
         int finish;
-        int fd;
+        int lent_re;
+        // int fd;
         int size;
         int _send;
+        int done;
+        int _state;
+        // int _sindex; // server index
+        int _lindex; // location index
     public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -32,44 +28,33 @@ class Response
         int getClientFD() const;
         Request & getRequest();
         Server & getServer();
-        std::string & getQuerys() {
-            return this->queryParams;
-        };
-        size_t & getStatusCode() {
-            return this->_statusCode;
-        };
-        int & get_done() {
-            return done;
-        };
-        std::string extractQueryParams(std::string path);
+        int &get_done(void);
         std::string get_extension(std::string str);
         std::string get_type(std::string path);
         std::string delete_space(std::string str);
-        int         handler(fd_set &r , fd_set &w);
-        int         defineLocation(std::vector<Location> location, std::string uriPath);
-        std::string setFullPath(Server server, std::string uriPath, int locationIndex);
-        int         isBadRequest(); // check for bad request
-        int         is_unsupportedVersion(); // check for http version
-        int         is_notImplemented();
-        int         isAllowedMethod(Server server, Location locationBlock, std::string requestedMethod); // check for methods allowed by server
-        int         isPayloadTooLarge(Server server, Location locationBlock, int contentLengthRequested);
-        int         defineFileType(std::string pathToResource);
-        int         shouldListContent(Server server, int locationIndex);
-        int         shouldRedirectUrl(Location locationBlock, std::string pathtosearch);
-        int         isForbiddenResource(std::string resource, int locationIndex);
-        int         deleteDir(std::string pathToDir);
-        int         deleteRequest(std::string pathToDelete);
-        void        craftErrorPage(std::string errorMsg, size_t statusCode);
-        void        craftResponse(std::string path, std::string msg, size_t statusCode, bool isError);
-        int         sendResponse(fd_set &r , fd_set &w);
-        size_t      getSizeOfFile(std::string file);
-        std::string defineMimeType(std::vector<std::string> mimeTypes, std::string path);
-        // this function should be refactored
-        // talk to me il explain
-    // void send_data(fd_set &r , fd_set &w, std::string Path)
+        int handler(fd_set &r , fd_set &w);
+        int is_Valide(fd_set &r , fd_set &w);
+        int is_Unauthorize(fd_set &r , fd_set &w);
+        int defineLocation(std::string path);
+        int checkMethod(void);
+        int sendResponse(fd_set &r, fd_set &w , std::string filePath = "");
+        std::string DefineErrorPath(std::string ErrorCode);
+        // std::string stringtrim(std::string str);
+    // void send_data(fd_set &r , fd_set &w)
     // {
     //     struct stat st;
-
+    //     std::string Path = "";
+    //     std::string pathtosearch = delete_space((_request.Getrequest().at("Path")));
+    //     for (size_t i = 0; i < _server.getLocations().size(); i++)
+    //     {
+    //         if (_server.getLocations()[i].getLocationPath() == pathtosearch)
+    //             Path = delete_space(_server.getLocations()[i].getRoot() + pathtosearch);
+    //     }
+    //     std::cout << Path << std::endl;
+    //     // Path = delete_space((Path + _request.Getrequest().at("Path")));
+    //     // if (Path == "www/")
+    //     //     Path = "www/file.html";
+    //     // while(1);
     //     if (is_Valide(r,w))
     //     {
     //         if (is_Unauthorize(r,w))

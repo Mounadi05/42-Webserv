@@ -95,7 +95,7 @@ t_dir show_dir_content(std::string path)
   return ret;
 }
 
-std::string generate_autoindex(std::string path)
+std::string generate_autoindex(std::string path , std::string root)
 {
   std::string ret = "";
   if (!path.empty())
@@ -109,7 +109,7 @@ std::string generate_autoindex(std::string path)
     {
       ret += "<tr>";
       ret += "<td valign='top'><img src='" + ((vec[i].second == ISFILE) ? std::string(filecdn) : std::string(foldercdn)) + "' alt='[DIR]'></td>";
-      ret += "<td><a href='" + vec[i].first.first + "'>" + vec[i].first.first + "</a></td>";
+      ret += "<td><a href='" + root + "/" + vec[i].first.first + "'>" + vec[i].first.first + "</a></td>";
       ret += "<td align='right'> " + vec[i].first.second + " </td>";
       ret += "<td>&nbsp;</td>";
     }
@@ -118,9 +118,9 @@ std::string generate_autoindex(std::string path)
   return ret;
 }
 
-int main(int argc, char **argv)
-{
-  if (argc != 1)
-    std::cout << generate_autoindex(argv[1]) << std::endl;
-  return (0);
-}
+// int main(int argc, char **argv)
+// {
+//   if (argc != 1)
+//     std::cout << generate_autoindex(argv[1]) << std::endl;
+//   return (0);
+// }

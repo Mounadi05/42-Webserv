@@ -90,7 +90,7 @@ void Config::parse()
         {
             skip_empty_lines(_Configfile);
             if (!start && token != "server")
-                printError("config File Error");
+                printError("Bad config File");
             else
                 start = 1;
             if (token == "{")

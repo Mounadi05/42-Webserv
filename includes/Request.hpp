@@ -7,6 +7,8 @@ class Request
 {
 private:
     std::map<std::string, std::string> request;
+    std::string _method;
+    std::string _path;
     int header;
     int first_line;
     int done;
@@ -42,7 +44,8 @@ public:
     int &get_send(void);
     int &get_size(void);
     void init_map(void);
-
-
+    std::string getPath() const;
+    std::string getMethod() const;
 };
+std::ostream & operator<<(std::ostream & out ,Request & other);
 #endif

@@ -1,6 +1,8 @@
 #include "../../includes/Webserv.hpp"
 #include <utility>
 
+#define DONE 1
+#define NOT_FINISHED 0
 
 IOMultiplexing::IOMultiplexing()
 {
@@ -88,7 +90,6 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
     {
         sock.setSocketFd(usedfd);
     }
-
     return (0);
 }
 
@@ -185,15 +186,19 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                             ReadyResponse.push_back(resp);
                         }
+
                     }
                 }
             }  
             for (u_int i = 0; i < ReadyResponse.size(); i++)
             {
                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
-                {
-                    ReadyResponse[i].handler(io.fdread,io.fdwrite);
+                { 
+                    ReadyResponse[i].handler(io.fdread,io.fdwrite); 
+                    if (ReadyResponse[i].get_done() == 1)
+                        ReadyResponse.erase(ReadyResponse.begin() + i);
                 }
+                 
             }
         }
     }

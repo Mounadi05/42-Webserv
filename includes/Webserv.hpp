@@ -18,7 +18,16 @@
 #include "Request.hpp"
 #include <map>
 #include "Response.hpp"
-#include <sys/types.h>
-#include <sys/stat.h>
+
+enum e_state {
+    INIT = 1,
+    BEGIN,
+    PEOCESSING,
+    END,
+    ERROR,
+    DENIEDMETHOD = 405,
+    NOTFOUND = 404,
+    UNAUTHORIZED = 401
+};
 
 #endif

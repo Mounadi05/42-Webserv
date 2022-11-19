@@ -16,6 +16,7 @@ private:
     std::string _clientMaxBodySize;
     std::vector<std::string> _allowedMethods;
     std::vector<Location> _locations;
+    std::vector<std::pair<std::string, std::string> > _redirections;
     std::vector<std::pair<std::string, std::string> > _error_pages;
     std::string _uploadPath;
     std::vector<std::string> _index;
