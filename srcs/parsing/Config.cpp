@@ -233,11 +233,11 @@ int valide_error_code(std::string error_code)
     // int number = 0;
     if (is_number(error_code))
     {
-        if (stoi(error_code) < 400)
-            printError("not valid error code");
+        if (stoi(error_code) < 200)
+            printError("not valid code");
     }
     else
-        printError("not valid error code");
+        printError("not valid code");
     return 1;
 }
 
@@ -345,6 +345,23 @@ void Config::handel_location(std::string &line, Server &server)
                     index = getNextToken(line);
                 }
                 location.setIndex(indexes);
+            }
+            else if (token == "return")
+            {
+                std::string code = getNextToken(line);
+                if (code == "")
+                    printError("return code is empty");
+                else
+                {
+                    if (valide_error_code(code))
+                    {
+                        std::string url = getNextToken(line);
+                        if (url == "")
+                            printError("return url is empty");
+                        else
+                            location.setRedirection(std::pair<std::string,std::string>(code, url));
+                    }
+                }
             }
             else
                 printError("Config File Error");

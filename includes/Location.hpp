@@ -17,6 +17,7 @@ class Location
         std::string                                         _autoIndex;
         std::vector<std::pair<std::string, std::string> >   _error_pages;
         std::string                                         _uploadPath;
+        std::pair<std::string, std::string>                 _redirection;
     public:
         Location();
         ~Location();
@@ -30,6 +31,7 @@ class Location
         std::string                                         & getAutoIndex();
         std::vector<std::pair<std::string, std::string> >   & getErrorPages();
         std::string                                         & getUploadPath();
+        std::pair<std::string, std::string>                 & getRedirection();
 
 
         void                                                setLocationNumber(std::string locationNumber);
@@ -41,6 +43,7 @@ class Location
         void                                                setAutoIndex(std::string autoIndex);
         void                                                setErrorPages(std::vector<std::pair<std::string, std::string> > error_pages);
         void                                                setUploadPath(std::string uploadPath);
+        void                                                setRedirection(std::pair<std::string, std::string> redirection);
         
 
 };

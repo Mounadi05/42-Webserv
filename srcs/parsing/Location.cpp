@@ -99,3 +99,13 @@ void Location::setUploadPath(std::string uploadPath)
 {
     _uploadPath = uploadPath;
 }
+
+void Location::setRedirection(std::pair<std::string, std::string> redirection)
+{
+    _redirection = redirection;
+}
+
+std::pair<std::string, std::string> &Location::getRedirection()
+{
+    return _redirection;
+}

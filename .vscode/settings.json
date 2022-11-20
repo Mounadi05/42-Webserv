@@ -60,6 +60,17 @@
         "system_error": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "__bits": "cpp",
+        "__hash_table": "cpp",
+        "array": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "compare": "cpp",
+        "complex": "cpp",
+        "concepts": "cpp",
+        "sstream": "cpp",
+        "unordered_map": "cpp",
+        "variant": "cpp"
     }
 }
