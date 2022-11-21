@@ -112,6 +112,16 @@ void Config::parse()
                 hadel_listen(line, _Servers[n_server - 1]);
             else if (token == "server_name")
                 handel_server_name(line, _Servers[n_server - 1]);
+            else if (token == "cgi")
+            {
+                std::string cgi_path = getNextToken(line);
+                std::string cgi_extension = getNextToken(line);
+                if (cgi_path == "" || cgi_extension == "")
+                    printError("config File Error");
+                if (cgi_extension[0] != '.')
+                    printError("Bad cgi extension");
+                _Servers[n_server - 1].setCgi(std::pair<std::string,std::string>(cgi_path, cgi_extension));
+            }
             else if (token == "root")
             {
                 std::string root = getNextToken(line);

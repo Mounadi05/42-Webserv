@@ -21,6 +21,7 @@ private:
     std::string _uploadPath;
     std::vector<std::string> _index;
     std::vector<std::string> mime_types;
+    std::pair<std::string,std::string> _cgi;
 public:
     Server();
     ~Server();
@@ -39,7 +40,7 @@ public:
     std::string &getUploadPath();
     std::vector<std::string> &getIndex();
     std::vector<std::string> &getmime_types(void);
-
+    std::pair<std::string,std::string> &getCgi(void);
 
 
     void setSocket(Socket socket);
@@ -56,6 +57,7 @@ public:
     void setUploadPath(std::string uploadPath);
     void setIndex(std::vector<std::string> index);
     void init_MimeTypes(void);
+    void setCgi(std::pair<std::string,std::string> cgi);
 };
 
 #endif
