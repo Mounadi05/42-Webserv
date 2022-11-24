@@ -21,10 +21,13 @@ private:
     std::string _uploadPath;
     std::vector<std::string> _index;
     std::vector<std::string> mime_types;
+    
+
 public:
     Server();
     ~Server();
-
+    std::string root;
+    int en_handle;
     Socket &getSocket();
     // std::string                                         & getHost();
     size_t &getPort();
@@ -39,6 +42,7 @@ public:
     std::string &getUploadPath();
     std::vector<std::string> &getIndex();
     std::vector<std::string> &getmime_types(void);
+    int a;
 
 
 

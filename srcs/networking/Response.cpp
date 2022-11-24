@@ -99,6 +99,35 @@ int Response::is_Valide(fd_set &r , fd_set &w)
     }
     return 1;
 }
+
+int Response::handle_location(void)
+{
+    Path = delete_space((_request.Getrequest().at("Path")));
+    for(int a = 0;a < (int) _server.getLocations().size(); a++)
+    {
+        if (Path == _server.getLocations().at(a).getLocationPath())
+        {
+            _server.root = _server.getLocations().at(a).getRoot();
+           _server.en_handle = 1;
+            index =  _server.getLocations().at(a).getIndex();
+            return 1;
+        }
+    }
+    return 0;
+}
+int Response::handle_index(void)
+{
+    for(int i = 0; i < (int)index.size(); i++)
+    {
+        Path = _server.root + "/"+ index.at(i);
+        if (access((const char *)Path.c_str(),F_OK) != -1)
+        {
+            _server.en_handle = 2;
+            return 1;
+        }
+    }
+    return 0;
+}
 int Response::is_Unauthorize(fd_set &r , fd_set &w)
 {
     std::string Method = _request.Getrequest().at("Method");

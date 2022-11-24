@@ -42,7 +42,7 @@ public:
     int &get_send(void);
     int &get_size(void);
     void init_map(void);
-
+    void handel_host_port(void);
 
 };
 #endif

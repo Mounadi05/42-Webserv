@@ -2,11 +2,14 @@
 
 Server::Server()
 {
+    std::cout << "GHHhelldfljgdsfg" << std::endl;
     _port = 80;
     _root = "";
     _autoIndex = "off";
     _clientMaxBodySize = "1";
-    _uploadPath = "./ var/www/uploads";
+    _uploadPath = "./var/www/uploads";
+    en_handle = 0;
+    a = 9000;
     init_MimeTypes();
 }
 

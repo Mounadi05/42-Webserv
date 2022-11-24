@@ -12,6 +12,7 @@ Request::Request()
     size = 0;
     send = 0;
     connection = 0;
+    init_map();
    
 }
 Request::~Request()
@@ -49,21 +50,20 @@ void Request::init_map()
 }
 void Request::valid_request(std::string str)
 {
-    std::string hhh =  str;
-    int index = 0;
+     int index = 0;
     int delemiter = 0;
     std::string tmp;
     delemiter = str.find(" ", index);
     tmp = str.substr(index, delemiter);
-    request.insert(std::pair<std::string, std::string>("Method", tmp));
+    request.at("Method")= tmp;
     index = delemiter;
     delemiter = str.find(" ", index + 1);
     tmp = str.substr(index, delemiter - index);
-    request.insert(std::pair<std::string, std::string>("Path", tmp));
+    request.at("Path")= tmp;
     index = delemiter + 1;
     delemiter = str.find("\r\n", index + 1);
     tmp = str.substr(index, delemiter - index);
-    request.insert(std::pair<std::string, std::string>("Version", tmp));
+    request.at("Version")= tmp;
     if (!(request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
         first_line = 1;
 }
@@ -97,6 +97,17 @@ void Request::get_body(char *str)
     while (i < _length)
         body[a++] = str[i++];
     body_length = a;
+}
+void Request::handel_host_port(void)
+{   
+    request.insert(std::pair<std::string, std::string>("Port",""));
+    std::string tmp = request.at("Host");
+    int index = tmp.find(":",0);
+    if(index != -1)
+    {
+        request.at("Host") = tmp.substr(0,index);
+        request.at("Port") = tmp.substr(index+1,4);
+    }
 }
 
 void Request::check_request(char *tmp)
@@ -182,7 +193,6 @@ void Request::handle_request(char *str)
                 request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
                 index = hold + 2;
-                std::cout << value << std::endl;
             } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
             finished = 1;
             if (request.at("Method") == "POST")
@@ -196,6 +206,7 @@ void Request::handle_request(char *str)
         }
         if (!connection)
             request.insert(std::pair<std::string, std::string>("Connection","close"));
+        handel_host_port();
     }
     else if (done)
     {

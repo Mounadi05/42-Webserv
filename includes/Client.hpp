@@ -21,7 +21,6 @@ class Client
         int test;
         int a;
         int len;
-
 };
 
 #endif

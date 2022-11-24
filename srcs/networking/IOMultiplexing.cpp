@@ -122,12 +122,14 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 int fdserver = servers[j].getSocket().getSocketFd();
                 if (FD_ISSET(fdserver, &readcpy))
                 {
+                    std::cout << "A*****************" << std::endl;
                     Client newC;
+                    std::cout << "B*****************" << std::endl;
                     if ((fd_client = accept(fdserver, NULL, NULL)) != -1)
                     {
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
-                        newC.setServer(servers[j]);
+                         newC.setServer(servers[j]);
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
                         std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
                         io.setFdRead(fd_client);
@@ -161,15 +163,14 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second = Request();
                         ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
-                          
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
                             Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                            std::cout <<"check : " <<ClientRequest[i].first.getServer().a << std::endl;
                             ReadyResponse.push_back(resp);
                         }
-
                     }
                 }
             }  
