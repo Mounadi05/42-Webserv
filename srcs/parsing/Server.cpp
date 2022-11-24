@@ -149,3 +149,13 @@ void Server::init_MimeTypes(void)
     file.close();
    
 }
+
+void Server::setCgi(std::pair<std::string,std::string> cgi)
+{
+    _cgi = cgi;
+}
+
+std::pair<std::string,std::string> &Server::getCgi(void)
+{
+    return _cgi;
+}

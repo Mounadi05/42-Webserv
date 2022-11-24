@@ -192,8 +192,7 @@ void Request::handle_request(char *str)
                 i = value.find(":", 0);
                 request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
-                index = hold + 2;
-            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
+                index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
             finished = 1;
             if (request.at("Method") == "POST")
             {
