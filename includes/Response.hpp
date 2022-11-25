@@ -38,8 +38,8 @@ class Response
         int handle_location(void);
         int handle_index(void);
         void send_data(fd_set &r , fd_set &w);
-        Location & define_location_i(int & i_refere);
-        std::string get_referer();
+        Location & define_location_i(int & i_refere,fd_set &r, fd_set &w);
+        std::string get_referer(fd_set &r, fd_set &w);
         std::string check_index(Location & _location);
 };
 

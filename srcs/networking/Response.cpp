@@ -152,46 +152,60 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     return 1;
 }
 
-std::string Response::get_referer()
+std::string Response::get_referer(fd_set &r, fd_set &w)
 {
-    try
-    {
-        std::string referer = _request.Getrequest().at("Referer");
-        return (referer.substr(referer.find_last_of("/")));
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "error map : " << e.what() << '\n';
-    }
-    return ("");
+    (void)r;
+    (void)w;
+    std::string referer = _request.Getrequest().at("Referer");
+    return (referer.substr(referer.find_last_of("/")));
+    // return ("");
 }
 
-Location &Response::define_location_i(int & i_refere)
+Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
 {
     std::string request_path;
 
     request_path = delete_space(_request.Getrequest().at("Path"));
-
+    std::cout << "request_path : " << request_path << std::endl;
     for (std::vector<Location>::iterator it = _server.getLocations().begin(); it != _server.getLocations().end(); it++)
     {
-        if (request_path.find(it->getLocationPath()) != std::string::npos)
+        if (request_path == it->getLocationPath())
             return *it;
     }
     i_refere = 1;
-    std::string refere = get_referer();
-    for (std::vector<Location>::iterator it = _server.getLocations().begin(); it != _server.getLocations().end(); it++)
+    try 
     {
-        if (refere.find(it->getLocationPath()) != std::string::npos)
-            return *it;
+        std::string refere = get_referer(r, w);
+        std::cout << "refere : " << refere << std::endl;
+        for (std::vector<Location>::iterator it = _server.getLocations().begin(); it != _server.getLocations().end(); it++)
+        {
+            if (refere == it->getLocationPath())
+                return *it;
+        }
+    }
+    catch(const std::exception& e)
+    {
+        request_path = delete_space(_request.Getrequest().at("Path"));
+        std::cout << "request_path try catch : " << request_path << std::endl;
+        //search from the end of vector
+        for (std::vector<Location>::reverse_iterator it = _server.getLocations().rbegin(); it != _server.getLocations().rend(); it++)
+        {
+            std::cout << "it->getLocationPath() : " << it->getLocationPath() << std::endl;
+            if (request_path.find(it->getLocationPath()) != std::string::npos)
+            {
+                return *it;
+            }
+        }
     }
     return (_server.getLocations().at(0));
 }
 
-std::string Response::check_index(Location & _location)
+std::string Response::check_index(Location &_location)
 {
     for (size_t i = 0; i < _location.getIndex().size(); i++)
     {
-        std::string file = _location.getRoot() + "/" +_location.getIndex().at(i);
+        std::string file =
+            ((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) + _location.getIndex().at(i);
         if (access(file.c_str(), F_OK) != -1)
             return (file);
     }
@@ -201,9 +215,12 @@ std::string Response::check_index(Location & _location)
 void Response::send_data(fd_set &r, fd_set &w)
 {
     struct stat st;
-    Location loc = define_location_i(_refere);
+    Location loc = define_location_i(_refere, r, w);
     if (!_refere)
+    {
         Path = check_index(loc);
+        // autoindex
+    }
     else
         Path = loc.getRoot() + delete_space(_request.Getrequest().at("Path"));
     if (is_Valide(r, w))
@@ -241,6 +258,14 @@ void Response::send_data(fd_set &r, fd_set &w)
                     lent_re = 0;
                     done = 1;
                 }
+            }
+            else
+            {
+                std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+                send(_ClientFD, message.c_str(), message.size(), 0);
+                FD_CLR(_ClientFD, &w);
+                FD_SET(_ClientFD, &r);
+                done = 1;
             }
         }
     }
