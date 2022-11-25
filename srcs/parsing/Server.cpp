@@ -2,7 +2,7 @@
 
 Server::Server()
 {
-    std::cout << "GHHhelldfljgdsfg" << std::endl;
+    // std::cout << "GHHhelldfljgdsfg" << std::endl;
     _port = 80;
     _root = "";
     _autoIndex = "off";
@@ -155,7 +155,7 @@ void Server::setCgi(std::pair<std::string,std::string> cgi)
     _cgi = cgi;
 }
 
-std::pair<std::string,std::string> &Server::getCgi(void)
-{
-    return _cgi;
-}
+// std::pair<std::string,std::string> &Server::getCgi(void)
+// {
+//     return _cgi;
+// }
