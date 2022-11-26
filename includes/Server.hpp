@@ -23,6 +23,7 @@ private:
     std::vector<std::string> mime_types;
     std::pair<std::string,std::string> _cgi;
 public:
+    int i_location;
     Server();
     ~Server();
     std::string root;

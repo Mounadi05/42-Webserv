@@ -2,7 +2,7 @@
 
 Server::Server()
 {
-    std::cout << "GHHhelldfljgdsfg" << std::endl;
+    // std::cout << "GHHhelldfljgdsfg" << std::endl;
     _port = 80;
     _root = "";
     _autoIndex = "off";
