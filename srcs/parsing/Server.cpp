@@ -8,7 +8,7 @@ Server::Server()
     _autoIndex = "off";
     _clientMaxBodySize = "1";
     _uploadPath = "./var/www/uploads";
-    en_handle = 0;
+    en_handle = -1;
     a = 9000;
     init_MimeTypes();
 }

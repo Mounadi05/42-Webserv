@@ -17,6 +17,7 @@ Response::Response(Request request, Server *server, int ClientFD)
     _send = 0;
     done = 0;
     _refere = 0;
+    // index = -1;
 }
 
 Response::~Response()
@@ -172,36 +173,16 @@ Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
     // /location/index.html
     // /location
     // substring location from request_path
-    for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
+    int i = 0;
+    for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++, i++)
     {
         if (request_path == it->getLocationPath())
+        {
+            _server->en_handle = i;
             return *it;
+        }
     }
-    // throw std::out_of_range("Location not found");
-    // i_refere = 1;
-    // try
-    // {
-    //     std::string refere = get_referer(r, w);
-    //     // std::cout << "refere : " << refere << std::endl;
-    //     for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
-    //     {
-    //         if (refere == it->getLocationPath())
-    //             return *it;
-    //     }
-    // }
-    // catch(const std::exception& e)
-    // {
-    //     std::cout << "Here" << std::endl;
-    //     _refere = 2;
-    //     request_path = delete_space(_request.Getrequest().at("Path"));
-    //     std::string location = request_path.substr(0, request_path.find("/", 1));
-    //     std::cout << "location : " << location << std::endl;
-    //     for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
-    //     {
-    //         if (location == it->getLocationPath())
-    //             return *it;
-    //     }
-    // }
+    throw std::runtime_error("Location not found");
     return (_server->getLocations().at(0));
 }
 
@@ -217,90 +198,115 @@ std::string Response::check_index(Location &_location)
     return ("");
 }
 
-int Response::handle_location(void)
-{
-    Path = delete_space((_request.Getrequest().at("Path")));
-    for(int a = 0;a < (int) _server->getLocations().size(); a++)
-    {
-        if (Path == _server->getLocations().at(a).getLocationPath())
-        {
-            _server->root = _server->getLocations().at(a).getRoot();
-           _server->en_handle = 1;
-            index =  _server->getLocations().at(a).getIndex();
-            return 1;
-        }
-    }
-    return 0;
-}
+// int Response::handle_location(void)
+// {
+//     Path = delete_space((_request.Getrequest().at("Path")));
+//     for (int a = 0; a < (int)_server->getLocations().size(); a++)
+//     {
+//         if (Path == _server->getLocations().at(a).getLocationPath())
+//         {
+//             _server->root = _server->getLocations().at(a).getRoot();
+//             _server->en_handle = 1;
+//             index = _server->getLocations().at(a).getIndex();
+//             return 1;
+//         }
+//     }
+//     return 0;
+// }
 
-int Response::handle_index(void)
-{
-    for(int i = 0; i < (int)index.size(); i++)
-    {
-        Path = _server->root + "/"+ index.at(i);
-        if (access((const char *)Path.c_str(),F_OK) != -1)
-        {
-            _server->en_handle = 2;
-            return 1;
-        }
-    }
-    return 0;
-}
+// int Response::handle_index(void)
+// {
+//     for (int i = 0; i < (int)index.size(); i++)
+//     {
+//         Path = _server->root + "/" + index.at(i);
+//         if (access((const char *)Path.c_str(), F_OK) != -1)
+//         {
+//             _server->en_handle = 2;
+//             return 1;
+//         }
+//     }
+//     return 0;
+// }
 
 void Response::send_data(fd_set &r, fd_set &w)
 {
     struct stat st;
-    std::cout << "en_handle "<< _server->en_handle << std::endl;
-    Path = delete_space((_request.Getrequest().at("Path")));
+    Location _location;
+    try
+    {
+        std::cout << "Try" << std::endl;
+        _location = define_location_i(_refere, r, w);
+        std::cout << "location : " << _location.getLocationPath() << std::endl;
+        Path = _location.getRoot() + delete_space((_request.Getrequest().at("Path")));
+        std::string index = check_index(_location);
+        if (index != "")
+            Path = index;
+    }
+    catch (const std::exception &e)
+    {
+        std::cout << _server->en_handle << std::endl;
+        std::cout << "Catch" << std::endl;
+        Path = _server->getLocations().at(_server->en_handle).getRoot() + delete_space((_request.Getrequest().at("Path")));
+    }
     std::cout << "Path : " << Path << std::endl;
-    std::cout << "en_handle "<< _server->en_handle << std::endl;
+
     if (is_Valide(r, w))
     {
         if (is_Unauthorize(r, w))
         {
-            if (_server->en_handle || handle_location())
+            // if (_server->en_handle || handle_location())
+            // {
+            // if (_server->en_handle >= 2 || handle_index())
+            // {
+            // if (_server->en_handle == 3)
+            // {
+            //     Path = _server->root + Path;
+            // }
+            if (access((const char *)Path.c_str(), F_OK) != -1)
             {
-                if (_server->en_handle >= 2 || handle_index())
+                // _server->en_handle = 3;
+                if (!finish)
                 {
-                    if (_server->en_handle == 3)
-                    {
-                        Path = _server->root + Path;
-                    }
-                    if (access((const char *)Path.c_str(), F_OK) != -1)
-                    {
-                        _server->en_handle = 3;
-                        if (!finish)
-                        {
-                            stat((const char *)Path.c_str(), &st);
-                            size = st.st_size;
-                            fd = open(Path.c_str(), O_RDONLY);
-                            bzero(str, 1025);
-                            std::string header;
-                            header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + delete_space(get_type(Path)) + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
-                            write(_ClientFD, header.c_str(), header.size());
-                            finish = 10;
-                        }
-                        lent = read(fd, str, 1024);
-                        _send = send(_ClientFD, str, lent, 0);
-                        lent_re += _send;
-                        if (_send == -1)
-                        {
-                            FD_CLR(_ClientFD, &w);
-                            FD_SET(_ClientFD, &r);
-                            done = 1;
-                            close(fd);
-                        }
-                        else if (lent_re >= size)
-                        {
-                            FD_CLR(_ClientFD, &w);
-                            FD_SET(_ClientFD, &r);
-                            close(fd);
-                            lent_re = 0;
-                            done = 1;
-                        }
-                    }
+                    stat((const char *)Path.c_str(), &st);
+                    size = st.st_size;
+                    fd = open(Path.c_str(), O_RDONLY);
+                    bzero(str, 1025);
+                    std::string header;
+                    header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + delete_space(get_type(Path)) + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+                    write(_ClientFD, header.c_str(), header.size());
+                    finish = 10;
+                }
+                lent = read(fd, str, 1024);
+                _send = send(_ClientFD, str, lent, 0);
+                lent_re += _send;
+                if (_send == -1)
+                {
+                    FD_CLR(_ClientFD, &w);
+                    FD_SET(_ClientFD, &r);
+                    done = 1;
+                    close(fd);
+                }
+                else if (lent_re >= size)
+                {
+                    FD_CLR(_ClientFD, &w);
+                    FD_SET(_ClientFD, &r);
+                    close(fd);
+                    lent_re = 0;
+                    done = 1;
                 }
             }
         }
     }
+    else
+    {
+        //response 404
+        std::string header;
+        header = (char *)"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nContent-type: text/html\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+        write(_ClientFD, header.c_str(), header.size());
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+    }
+    //     }
+    // }
 }
