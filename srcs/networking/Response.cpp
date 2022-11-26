@@ -234,9 +234,7 @@ void Response::send_data(fd_set &r, fd_set &w)
     Location _location;
     try
     {
-        std::cout << "Try" << std::endl;
         _location = define_location_i(_refere, r, w);
-        std::cout << "location : " << _location.getLocationPath() << std::endl;
         Path = _location.getRoot() + delete_space((_request.Getrequest().at("Path")));
         std::string index = check_index(_location);
         if (index != "")
@@ -244,12 +242,44 @@ void Response::send_data(fd_set &r, fd_set &w)
     }
     catch (const std::exception &e)
     {
-        std::cout << _server->en_handle << std::endl;
-        std::cout << "Catch" << std::endl;
-        Path = _server->getLocations().at(_server->en_handle).getRoot() + delete_space((_request.Getrequest().at("Path")));
+        // std::cout << "DBG 2" << std::endl;
+        try
+        {
+            // _server->en_handle = -1;
+            Path = _server->getLocations().at(_server->en_handle).getRoot() + delete_space((_request.Getrequest().at("Path")));
+            // std::cout << "THIS ::" << Path << std::endl;
+            std::string locationPath = _server->getLocations().at(_server->en_handle).getLocationPath();
+            if (Path.find(locationPath) != std::string::npos && locationPath != "/")
+                Path = Path.substr(0, Path.find(locationPath)) + Path.substr(Path.find(locationPath) + locationPath.length());
+        }
+        catch (const std::exception &e)
+        {
+            std::cout << "DBG 1" << std::endl;
+            std::string request_path = delete_space(_request.Getrequest().at("Path"));
+            std::vector<Location>::iterator it;
+            for (it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
+            {
+                if (request_path.find(it->getLocationPath()) != std::string::npos)
+                {
+                    Path = it->getRoot() + request_path.substr(request_path.find(it->getLocationPath()) + it->getLocationPath().length());
+                    _server->en_handle = it - _server->getLocations().begin();
+                    std::cout <<  _server->en_handle << std::endl;
+                    break;
+                }
+            }
+        }
     }
-    std::cout << "Path : " << Path << std::endl;
-
+    //check if file exist
+    if (access((const char *)Path.c_str(), F_OK) == -1)
+    {
+        std::cout << Path << std::endl;
+        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return;
+    }
     if (is_Valide(r, w))
     {
         if (is_Unauthorize(r, w))
@@ -297,16 +327,7 @@ void Response::send_data(fd_set &r, fd_set &w)
             }
         }
     }
-    else
-    {
-        //response 404
-        std::string header;
-        header = (char *)"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nContent-type: text/html\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
-        write(_ClientFD, header.c_str(), header.size());
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-    }
+
     //     }
     // }
 }

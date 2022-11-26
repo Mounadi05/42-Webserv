@@ -118,9 +118,9 @@ std::string generate_autoindex(std::string path)
   return ret;
 }
 
-int main(int argc, char **argv)
-{
-  if (argc != 1)
-    std::cout << generate_autoindex(argv[1]) << std::endl;
-  return (0);
-}
+// int main(int argc, char **argv)
+// {
+//   if (argc != 1)
+//     std::cout << generate_autoindex(argv[1]) << std::endl;
+//   return (0);
+// }

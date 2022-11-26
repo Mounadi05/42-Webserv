@@ -7,6 +7,7 @@ src = 	./srcs/parsing/Config.cpp\
 		./srcs/networking/Clinet.cpp\
 		./srcs/networking/Request.cpp\
 		./srcs/networking/Response.cpp\
+		listDir.cpp\
 
 main = webserv.cpp
 obj = $(src:.cpp=.o)
