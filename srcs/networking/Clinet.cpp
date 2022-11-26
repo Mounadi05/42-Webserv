@@ -22,12 +22,12 @@ void Client::setSocketFd(int fd)
     this->_c_socket.setSocketFd(fd);
 }
 
-void Client::setServer(Server & clinet_server)
+void Client::setServer(Server * clinet_server)
 {
     _server = clinet_server;
 }
 
-Server & Client::getServer()
+Server * Client::getServer()
 {
     return _server;
 }

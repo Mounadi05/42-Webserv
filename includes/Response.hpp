@@ -9,7 +9,7 @@ class Response
     private:
         int _ClientFD;
         Request _request;
-        Server _server;
+        Server *_server;
         char *str;
         int lent;
         int finish;
@@ -23,11 +23,11 @@ class Response
     public:
         int _refere;
         Response();
-        Response(Request request,Server  server, int ClientFD);
+        Response(Request request,Server  *server, int ClientFD);
         ~Response();
         int getClientFD() const;
         Request & getRequest();
-        Server & getServer();
+        Server * getServer();
         int &get_done(void);
         std::string get_extension(std::string str);
         std::string get_type(std::string path);

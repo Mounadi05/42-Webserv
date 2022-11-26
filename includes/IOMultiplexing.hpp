@@ -22,10 +22,10 @@ public:
     void setFdMax(int fd);
 };
 
-void EventLoop(std::vector<Server> &servers, IOMultiplexing &io);
+void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io);
 int CreateSocket(Socket &sock, int port, IOMultiplexing &io);
 // int Bind();
 // int Listen();
-int CreatServer(Server &server, IOMultiplexing &io);
+int CreatServer(Server *server, IOMultiplexing &io);
 
 #endif

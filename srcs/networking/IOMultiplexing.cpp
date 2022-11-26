@@ -16,7 +16,7 @@ IOMultiplexing::~IOMultiplexing()
 void IOMultiplexing::SetupServers(Config &conf)
 {
     conf.parse();
-    std::vector<Server> &Svec = conf.getServers();
+    std::vector<Server*> &Svec = conf.getServers();
     if (Svec.size())
     {
         for (size_t i = 0; i < Svec.size(); i++)
@@ -27,9 +27,9 @@ void IOMultiplexing::SetupServers(Config &conf)
         printError("Bad config file " + conf.getFilePath());
 }
 
-int CreatServer(Server &server, IOMultiplexing &io)
+int CreatServer(Server *server, IOMultiplexing &io)
 {
-    CreateSocket(server.getSocket(), server.getPort(), io);
+    CreateSocket(server->getSocket(), server->getPort(), io);
     return 0;
 }
 
@@ -91,7 +91,7 @@ void IOMultiplexing::setFdMax(int fd)
     _fdmax = fd;
 }
 
-void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
+void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
 {
     fd_set readcpy, writecpy;
     int fd_client;
@@ -119,7 +119,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
         {
             for (size_t j = 0; j < servers.size(); j++)
             {
-                int fdserver = servers[j].getSocket().getSocketFd();
+                int fdserver = servers[j]->getSocket().getSocketFd();
                 if (FD_ISSET(fdserver, &readcpy))
                 {
                     // std::cout << "A*****************" << std::endl;

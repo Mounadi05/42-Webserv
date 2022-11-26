@@ -6,7 +6,7 @@
 #include <vector>
 
 class Config{
-    std::vector<Server> _Servers;
+    std::vector<Server *> _Servers;
     std::string _FilePath;
     std::ifstream _Configfile;
     
@@ -19,11 +19,11 @@ class Config{
     // Config & operator=(const Config & conf);
     // Config(const Config & conf);
     void parse();
-    void handel_location(std::string &line ,Server &server);
-    void handel_server_name(std::string &line, Server &server);
-    void hadel_listen(std::string &line, Server &server);
+    void handel_location(std::string &line, Server *server);
+    void handel_server_name(std::string &line, Server *server);
+    void hadel_listen(std::string &line, Server *server);
     void print_servers();
-    std::vector<Server> & getServers();
+    std::vector<Server *> & getServers();
     std::string getFilePath() const;
 };
 

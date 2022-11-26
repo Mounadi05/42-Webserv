@@ -4,7 +4,7 @@ Response::Response()
 {
 }
 
-Response::Response(Request request, Server server, int ClientFD)
+Response::Response(Request request, Server *server, int ClientFD)
 {
     _request = request;
     _server = server;
@@ -33,7 +33,7 @@ Request &Response::getRequest()
     return _request;
 }
 
-Server &Response::getServer()
+Server *Response::getServer()
 {
     return _server;
 }
@@ -68,9 +68,9 @@ std::string Response::delete_space(std::string str)
 std::string Response::get_type(std::string path)
 {
     std::string tmp = get_extension(path);
-    for (int i = 0; i < (int)_server.getmime_types().size(); i++)
-        if ((int)_server.getmime_types()[i].find(tmp, 0) != -1)
-            return _server.getmime_types()[i].substr(0, _server.getmime_types()[i].find("|", 0));
+    for (int i = 0; i < (int)_server->getmime_types().size(); i++)
+        if ((int)_server->getmime_types()[i].find(tmp, 0) != -1)
+            return _server->getmime_types()[i].substr(0, _server->getmime_types()[i].find("|", 0));
     return path;
 }
 
@@ -167,7 +167,7 @@ Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
 
     request_path = delete_space(_request.Getrequest().at("Path"));
     std::cout << "request_path : " << request_path << std::endl;
-    for (std::vector<Location>::iterator it = _server.getLocations().begin(); it != _server.getLocations().end(); it++)
+    for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
     {
         if (request_path == it->getLocationPath())
             return *it;
@@ -177,7 +177,7 @@ Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
     {
         std::string refere = get_referer(r, w);
         std::cout << "refere : " << refere << std::endl;
-        for (std::vector<Location>::iterator it = _server.getLocations().begin(); it != _server.getLocations().end(); it++)
+        for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
         {
             if (refere == it->getLocationPath())
                 return *it;
@@ -188,7 +188,7 @@ Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
         request_path = delete_space(_request.Getrequest().at("Path"));
         std::cout << "request_path try catch : " << request_path << std::endl;
         //search from the end of vector
-        for (std::vector<Location>::reverse_iterator it = _server.getLocations().rbegin(); it != _server.getLocations().rend(); it++)
+        for (std::vector<Location>::reverse_iterator it = _server->getLocations().rbegin(); it != _server->getLocations().rend(); it++)
         {
             std::cout << "it->getLocationPath() : " << it->getLocationPath() << std::endl;
             if (request_path.find(it->getLocationPath()) != std::string::npos)
@@ -197,7 +197,7 @@ Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
             }
         }
     }
-    return (_server.getLocations().at(0));
+    return (_server->getLocations().at(0));
 }
 
 std::string Response::check_index(Location &_location)
