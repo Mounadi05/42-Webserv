@@ -139,10 +139,11 @@ std::vector<std::string> &Server::getmime_types(void)
 {
     return mime_types;
 }
+
 void Server::init_MimeTypes(void)
 {
     std::ifstream file;
-    file.open("srcs/mime.types");
+    file.open("./config.d/mime.types");
     std::string str;
     while(getline(file,str))
         mime_types.push_back(str);

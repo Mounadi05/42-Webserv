@@ -1,5 +1,5 @@
 Name = webserv
-src = 	./srcs/parsing/Config.cpp\
+src = 	./srcs/parsing/Config.cpp \
 		./srcs/parsing/Server.cpp\
 		./srcs/parsing/Location.cpp\
 		./srcs/parsing/Socket.cpp\
