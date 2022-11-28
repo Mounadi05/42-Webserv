@@ -17,6 +17,7 @@ Response::Response(Request request, Server *server, int ClientFD)
     _send = 0;
     done = 0;
     _refere = 0;
+    _rederict = 0;
     // index = -1;
 }
 
@@ -153,35 +154,26 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     return 1;
 }
 
-std::string Response::get_referer(fd_set &r, fd_set &w)
-{
-    (void)r;
-    (void)w;
-    std::string referer = _request.Getrequest().at("Referer");
-    return (referer.substr(referer.find_last_of("/")));
-    // return ("");
-}
+// std::string Response::getLocationRefere()
+// {
+//     std::string result = _request.Getrequest().at("Referer");
+//     std::cout << "result: " << result << std::endl;
+//     if (result != "")
+//         return (result.substr(result.find_last_of("/")));
+//     return "";
+// }
 
-Location &Response::define_location_i(int &i_refere, fd_set &r, fd_set &w)
+Location &Response::define_location(std::string location_path)
 {
-    (void)r;
-    (void)w;
-    (void)i_refere;
-    std::string request_path;
-
-    request_path = delete_space(_request.Getrequest().at("Path"));
-    // /location/index.html
-    // /location
-    // substring location from request_path
-    int i = 0;
-    for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++, i++)
+    for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
     {
-        if (request_path == it->getLocationPath())
+        if (location_path.find(it->getLocationPath()) != std::string::npos)
         {
-            _server->en_handle = i;
+            // _server->en_handle = 0;
             return *it;
         }
     }
+
     throw std::runtime_error("Location not found");
     return (_server->getLocations().at(0));
 }
@@ -198,103 +190,86 @@ std::string Response::check_index(Location &_location)
     return ("");
 }
 
-// int Response::handle_location(void)
-// {
-//     Path = delete_space((_request.Getrequest().at("Path")));
-//     for (int a = 0; a < (int)_server->getLocations().size(); a++)
-//     {
-//         if (Path == _server->getLocations().at(a).getLocationPath())
-//         {
-//             _server->root = _server->getLocations().at(a).getRoot();
-//             _server->en_handle = 1;
-//             index = _server->getLocations().at(a).getIndex();
-//             return 1;
-//         }
-//     }
-//     return 0;
-// }
+std::string parse_location(std::string path)
+{
+    std::cout << "path: " << path << std::endl;
+    std::string result = path.substr(0, path.find_first_of("/", 1));
+    std::cout << "result: " << result << std::endl;
+    return (result);
+}
 
-// int Response::handle_index(void)
-// {
-//     for (int i = 0; i < (int)index.size(); i++)
-//     {
-//         Path = _server->root + "/" + index.at(i);
-//         if (access((const char *)Path.c_str(), F_OK) != -1)
-//         {
-//             _server->en_handle = 2;
-//             return 1;
-//         }
-//     }
-//     return 0;
-// }
+std::string Response::grepLocation(std::string path, std::vector<Location> locations)
+{
+    std::cout << "path: " << path << std::endl;
+    std::string result = "";
+    for (std::vector<Location>::iterator it = locations.begin(); it != locations.end(); it++)
+    {
+        if (path.find(it->getLocationPath()) != std::string::npos)
+        {
+            if (path[it->getLocationPath().length()] && path[it->getLocationPath().length()] == '/')
+                result = path.substr(0, it->getLocationPath().length() + 1);
+            else
+                result = path.substr(0, it->getLocationPath().length());
+            std::cout << "result: " << result << std::endl;
+            break;
+        }
+    }
+    if (result == "")
+        throw std::runtime_error("Location not found");
+    if (result[result.length() - 1] != '/')
+    {
+        _rederict = 1;
+        return (result);
+        std::cout << "redirect to ----> " + result + "/" << std::endl;
+    }
+    if (result == path)
+        _rederict = 2;
+    return (result);
+}
+
+std::string Response::location_handler()
+{
+    Location _location;
+    std::string location_path = grepLocation(delete_space((_request.Getrequest().at("Path")))
+        , _server->getLocations());
+    // std::cout << "location_path: " << location_path << std::endl;
+    _location = define_location(location_path);
+    if (_rederict == 1)
+        return (location_path);
+    else if (_rederict == 2)
+        return (check_index(_location));
+    else if (_rederict == 0)
+        return (((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) 
+        + delete_space((_request.Getrequest().at("Path"))).substr(location_path.length()));
+    return ("zabi");
+}
 
 void Response::send_data(fd_set &r, fd_set &w)
 {
     struct stat st;
-    Location _location;
-    try
+    std::string re = location_handler();
+    std::cout << "_rederict : " << _rederict << std::endl;
+    if (_rederict == 1)
     {
-        _location = define_location_i(_refere, r, w);
-        Path = _location.getRoot() + delete_space((_request.Getrequest().at("Path")));
-        std::string index = check_index(_location);
-        if (index != "")
-            Path = index;
-    }
-    catch (const std::exception &e)
-    {
-        // std::cout << "DBG 2" << std::endl;
-        try
-        {
-            // _server->en_handle = -1;
-            Path = _server->getLocations().at(_server->en_handle).getRoot() + delete_space((_request.Getrequest().at("Path")));
-            // std::cout << "THIS ::" << Path << std::endl;
-            std::string locationPath = _server->getLocations().at(_server->en_handle).getLocationPath();
-            if (Path.find(locationPath) != std::string::npos && locationPath != "/")
-                Path = Path.substr(0, Path.find(locationPath)) + Path.substr(Path.find(locationPath) + locationPath.length());
-        }
-        catch (const std::exception &e)
-        {
-            std::cout << "DBG 1" << std::endl;
-            std::string request_path = delete_space(_request.Getrequest().at("Path"));
-            std::vector<Location>::iterator it;
-            for (it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
-            {
-                if (request_path.find(it->getLocationPath()) != std::string::npos)
-                {
-                    Path = it->getRoot() + request_path.substr(request_path.find(it->getLocationPath()) + it->getLocationPath().length());
-                    _server->en_handle = it - _server->getLocations().begin();
-                    std::cout <<  _server->en_handle << std::endl;
-                    break;
-                }
-            }
-        }
-    }
-    //check if file exist
-    if (access((const char *)Path.c_str(), F_OK) == -1)
-    {
-        std::cout << Path << std::endl;
-        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+        std::cout << "redirect to ----> " + re << std::endl;
+        std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
+        message += _request.Getrequest().at("Path") + "/";
+        message += "\r\nContent-Length: 0\r\n\r\n";
         send(_ClientFD, message.c_str(), message.size(), 0);
         FD_CLR(_ClientFD, &w);
         FD_SET(_ClientFD, &r);
         done = 1;
         return;
     }
+    else
+        Path = re;
+    std::cout << "Path: " << Path << std::endl;
     if (is_Valide(r, w))
     {
         if (is_Unauthorize(r, w))
         {
-            // if (_server->en_handle || handle_location())
-            // {
-            // if (_server->en_handle >= 2 || handle_index())
-            // {
-            // if (_server->en_handle == 3)
-            // {
-            //     Path = _server->root + Path;
-            // }
             if (access((const char *)Path.c_str(), F_OK) != -1)
             {
-                // _server->en_handle = 3;
                 if (!finish)
                 {
                     stat((const char *)Path.c_str(), &st);
@@ -327,7 +302,4 @@ void Response::send_data(fd_set &r, fd_set &w)
             }
         }
     }
-
-    //     }
-    // }
 }

@@ -47,7 +47,7 @@ void Request::init_map()
     request.insert(std::pair<std::string, std::string>("Version", ""));
     request.insert(std::pair<std::string, std::string>("Path", ""));
     request.insert(std::pair<std::string, std::string>("Method", ""));
-    request.insert(std::pair<std::string, std::string>("Method", ""));
+    // request.insert(std::pair<std::string, std::string>("Referer", ""));
     // try
     // {
     //     std::cout << request.at("Referer") << std::endl;

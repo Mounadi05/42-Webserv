@@ -21,6 +21,7 @@ class Response
         std::string Path;
         std::vector<std::string> index;
     public:
+        int _rederict;
         int _refere;
         Response();
         Response(Request request,Server  *server, int ClientFD);
@@ -38,9 +39,11 @@ class Response
         int handle_location(void);
         int handle_index(void);
         void send_data(fd_set &r , fd_set &w);
-        Location & define_location_i(int & i_refere,fd_set &r, fd_set &w);
-        std::string get_referer(fd_set &r, fd_set &w);
+        Location & define_location(std::string location_path);
         std::string check_index(Location & _location);
+        std::string getLocationRefere();
+        std::string location_handler();
+        std::string grepLocation(std::string path, std::vector<Location> locations);
 };
 
 #endif
