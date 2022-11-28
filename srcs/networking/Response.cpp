@@ -154,24 +154,12 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     return 1;
 }
 
-// std::string Response::getLocationRefere()
-// {
-//     std::string result = _request.Getrequest().at("Referer");
-//     std::cout << "result: " << result << std::endl;
-//     if (result != "")
-//         return (result.substr(result.find_last_of("/")));
-//     return "";
-// }
-
 Location &Response::define_location(std::string location_path)
 {
     for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
     {
         if (location_path.find(it->getLocationPath()) != std::string::npos)
-        {
-            // _server->en_handle = 0;
             return *it;
-        }
     }
 
     throw std::runtime_error("Location not found");
@@ -188,14 +176,6 @@ std::string Response::check_index(Location &_location)
             return (file);
     }
     return ("");
-}
-
-std::string parse_location(std::string path)
-{
-    std::cout << "path: " << path << std::endl;
-    std::string result = path.substr(0, path.find_first_of("/", 1));
-    std::cout << "result: " << result << std::endl;
-    return (result);
 }
 
 std::string Response::grepLocation(std::string path, std::vector<Location> locations)
@@ -231,7 +211,6 @@ std::string Response::location_handler()
 {
     Location _location;
     std::string location_path = grepLocation(delete_space((_request.Getrequest().at("Path"))), _server->getLocations());
-    // std::cout << "location_path: " << location_path << std::endl;
     _location = define_location(location_path);
     if (_rederict == 1)
         return (location_path);
@@ -252,7 +231,7 @@ void Response::send_data(fd_set &r, fd_set &w)
     if (_rederict == 1)
     {
         std::cout << "redirect to ----> " + re << std::endl;
-        std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
+        std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
         message += _request.Getrequest().at("Path") + "/";
         message += "\r\nContent-Length: 0\r\n\r\n";
         send(_ClientFD, message.c_str(), message.size(), 0);
@@ -266,17 +245,27 @@ void Response::send_data(fd_set &r, fd_set &w)
     std::cout << "Path: " << Path << std::endl;
     if (stat(Path.c_str(), &st) == -1)
     {
-        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
         send(_ClientFD, message.c_str(), message.size(), 0);
         FD_CLR(_ClientFD, &w);
         FD_SET(_ClientFD, &r);
         done = 1;
         return;
     }
-    // is a directory
     if (S_ISDIR(st.st_mode))
     {
         std::cout << "r_path : " << delete_space((_request.Getrequest().at("Path"))) << std::endl;
+        if (Path[Path.length() - 1] != '/')
+        {
+            std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
+            message += _request.Getrequest().at("Path") + "/";
+            message += "\r\nContent-Length: 0\r\n\r\n";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return;
+        }
         std::string resp = generate_autoindex(Path, delete_space((_request.Getrequest().at("Path"))));
         std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: ";
         message += std::to_string(resp.size());
