@@ -230,8 +230,7 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
 std::string Response::location_handler()
 {
     Location _location;
-    std::string location_path = grepLocation(delete_space((_request.Getrequest().at("Path")))
-        , _server->getLocations());
+    std::string location_path = grepLocation(delete_space((_request.Getrequest().at("Path"))), _server->getLocations());
     // std::cout << "location_path: " << location_path << std::endl;
     _location = define_location(location_path);
     if (_rederict == 1)
@@ -239,10 +238,11 @@ std::string Response::location_handler()
     else if (_rederict == 2)
         return (check_index(_location));
     else if (_rederict == 0)
-        return (((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) 
-        + delete_space((_request.Getrequest().at("Path"))).substr(location_path.length()));
+        return (((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) + delete_space((_request.Getrequest().at("Path"))).substr(location_path.length()));
     return ("zabi");
 }
+
+std::string generate_autoindex(std::string path, std::string r_path);
 
 void Response::send_data(fd_set &r, fd_set &w)
 {
@@ -264,6 +264,30 @@ void Response::send_data(fd_set &r, fd_set &w)
     else
         Path = re;
     std::cout << "Path: " << Path << std::endl;
+    if (stat(Path.c_str(), &st) == -1)
+    {
+        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return;
+    }
+    // is a directory
+    if (S_ISDIR(st.st_mode))
+    {
+        std::cout << "r_path : " << delete_space((_request.Getrequest().at("Path"))) << std::endl;
+        std::string resp = generate_autoindex(Path, delete_space((_request.Getrequest().at("Path"))));
+        std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: ";
+        message += std::to_string(resp.size());
+        message += "\r\n\r\n";
+        message += resp;
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return;
+    }
     if (is_Valide(r, w))
     {
         if (is_Unauthorize(r, w))

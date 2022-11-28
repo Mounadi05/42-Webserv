@@ -95,14 +95,14 @@ t_dir show_dir_content(std::string path)
   return ret;
 }
 
-std::string generate_autoindex(std::string path)
+std::string generate_autoindex(std::string path, std::string r_path)
 {
   std::string ret = "";
   if (!path.empty())
   {
     t_dir vec = show_dir_content(path);
-    ret += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"><html><head><title>Index of " + path.substr(1) + "</title></head>";
-    ret += "<body><h1>Index of " + path.substr(1) + "</h1>";
+    ret += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"><html><head><title>Index of " + r_path + "</title></head>";
+    ret += "<body><h1>Index of " + r_path + "</h1>";
     ret += "<table><tr><th valign='top'></th><th><a href='?C=N;O=D'>Name</a></th><th><a href='?C=S;O=A'>Size</a></th></tr><tr>\
             <th colspan='5'><hr></th></tr>";
     for (size_t i = 0; i < vec.size(); i++)
