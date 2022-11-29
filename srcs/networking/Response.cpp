@@ -10,7 +10,8 @@ std::string uri_decode(std::string &src)
   int i, ii;
   for (i = 0; i <(int)src.length(); i++)
   {
-    if (int(src[i]) == 37)
+
+    if (int(src[i]) == '%')
     {
       sscanf(src.substr(i + 1, 2).c_str(), "%x", &ii);
       ch = static_cast<char>(ii);
@@ -193,10 +194,8 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
         {
             if (path[it->getLocationPath().length()] && path[it->getLocationPath().length()] == '/')
                 result = path.substr(0, it->getLocationPath().length() + 1);
-                // result = "/var/";
             else
                 result = path.substr(0, it->getLocationPath().length());
-                // result = "/var/";
             std::cout << "result: " << result << std::endl;
             break;
         }
