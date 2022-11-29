@@ -3,10 +3,33 @@
 Response::Response()
 {
 }
+std::string uri_decode(std::string &src)
+{
+  std::string ret;
+  char ch;
+  int i, ii;
+  for (i = 0; i <(int)src.length(); i++)
+  {
+    if (int(src[i]) == 37)
+    {
+      sscanf(src.substr(i + 1, 2).c_str(), "%x", &ii);
+      ch = static_cast<char>(ii);
+      ret += ch;
+      i = i + 2;
+    }
+    else
+    {
+      ret += src[i];
+    }
+  }
+
+  return (ret);
+}
 
 Response::Response(Request request, Server *server, int ClientFD)
 {
     _request = request;
+    _request.Getrequest().at("Path") = uri_decode(_request.Getrequest().at("Path"));
     _server = server;
     _ClientFD = ClientFD;
     str = new char[1025];
@@ -18,7 +41,6 @@ Response::Response(Request request, Server *server, int ClientFD)
     done = 0;
     _refere = 0;
     _rederict = 0;
-    // index = -1;
 }
 
 Response::~Response()
@@ -99,36 +121,6 @@ int Response::is_Valide(fd_set &r, fd_set &w)
     return 1;
 }
 
-// int Response::handle_location(void)
-// {
-//     Path = delete_space((_request.Getrequest().at("Path")));
-//     for (int a = 0; a < (int)_server.getLocations().size(); a++)
-//     {
-//         if (Path == _server.getLocations().at(a).getLocationPath())
-//         {
-//             _server.root = _server.getLocations().at(a).getRoot();
-//             _server.en_handle = 1;
-//             index = _server.getLocations().at(a).getIndex();
-//             return 1;
-//         }
-//     }
-//     return 0;
-// }
-
-// int Response::handle_index(void)
-// {
-//     for (int i = 0; i < (int)index.size(); i++)
-//     {
-//         Path = _server.root + "/" + index.at(i);
-//         if (access((const char *)Path.c_str(), F_OK) != -1)
-//         {
-//             _server.en_handle = 2;
-//             return 1;
-//         }
-//     }
-//     return 0;
-// }
-
 int Response::is_Unauthorize(fd_set &r, fd_set &w)
 {
     std::string Method = _request.Getrequest().at("Method");
@@ -178,9 +170,22 @@ std::string Response::check_index(Location &_location)
     return ("");
 }
 
+std::string strtim(std::string str) // remove space from start and end
+{
+    int i = 0;
+    while (str[i] == ' ')
+        i++;
+    str = str.substr(i, str.size() - i);
+    i = str.size() - 1;
+    while (str[i] == ' ')
+        i--;
+    str = str.substr(0, i + 1);
+    return str;
+}
+
 std::string Response::grepLocation(std::string path, std::vector<Location> locations)
 {
-    std::cout << "path: " << path << std::endl;
+    std::cout << "path 1 : " << path << std::endl;
     std::string result = "";
     for (std::vector<Location>::iterator it = locations.begin(); it != locations.end(); it++)
     {
@@ -188,8 +193,10 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
         {
             if (path[it->getLocationPath().length()] && path[it->getLocationPath().length()] == '/')
                 result = path.substr(0, it->getLocationPath().length() + 1);
+                // result = "/var/";
             else
                 result = path.substr(0, it->getLocationPath().length());
+                // result = "/var/";
             std::cout << "result: " << result << std::endl;
             break;
         }
@@ -210,14 +217,14 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
 std::string Response::location_handler()
 {
     Location _location;
-    std::string location_path = grepLocation(delete_space((_request.Getrequest().at("Path"))), _server->getLocations());
+    std::string location_path = grepLocation(strtim((_request.Getrequest().at("Path"))), _server->getLocations());
     _location = define_location(location_path);
     if (_rederict == 1)
         return (location_path);
     else if (_rederict == 2)
         return (check_index(_location));
     else if (_rederict == 0)
-        return (((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) + delete_space((_request.Getrequest().at("Path"))).substr(location_path.length()));
+        return (((_location.getRoot()[_location.getRoot().length() - 1] != '\\') ? _location.getRoot() + "/" : _location.getRoot()) + strtim((_request.Getrequest().at("Path"))).substr(location_path.length()));
     return ("zabi");
 }
 
@@ -226,39 +233,15 @@ std::string generate_autoindex(std::string path, std::string r_path);
 void Response::send_data(fd_set &r, fd_set &w)
 {
     struct stat st;
-    std::string re = location_handler();
-    std::cout << "_rederict : " << _rederict << std::endl;
-    if (_rederict == 1)
+    try
     {
-        std::cout << "redirect to ----> " + re << std::endl;
-        std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
-        message += _request.Getrequest().at("Path") + "/";
-        message += "\r\nContent-Length: 0\r\n\r\n";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-        return;
-    }
-    else
-        Path = re;
-    std::cout << "Path: " << Path << std::endl;
-    if (stat(Path.c_str(), &st) == -1)
-    {
-        std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-        return;
-    }
-    if (S_ISDIR(st.st_mode))
-    {
-        std::cout << "r_path : " << delete_space((_request.Getrequest().at("Path"))) << std::endl;
-        if (Path[Path.length() - 1] != '/')
+        std::string re = location_handler();
+        std::cout << "_rederict : " << _rederict << std::endl;
+        if (_rederict == 1)
         {
+            std::cout << "redirect to ----> " + re << std::endl;
             std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
-            message += _request.Getrequest().at("Path") + "/";
+            message += strtim(_request.Getrequest().at("Path")) + "/";
             message += "\r\nContent-Length: 0\r\n\r\n";
             send(_ClientFD, message.c_str(), message.size(), 0);
             FD_CLR(_ClientFD, &w);
@@ -266,16 +249,47 @@ void Response::send_data(fd_set &r, fd_set &w)
             done = 1;
             return;
         }
-        std::string resp = generate_autoindex(Path, delete_space((_request.Getrequest().at("Path"))));
-        std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: ";
-        message += std::to_string(resp.size());
-        message += "\r\n\r\n";
-        message += resp;
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-        return;
+        else
+            Path = re;
+        std::cout << "Path 2 : " << Path << std::endl;
+        if (stat(Path.c_str(), &st) == -1)
+        {
+            std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return;
+        }
+        if (S_ISDIR(st.st_mode))
+        {
+            std::cout << "r_path : " << strtim((_request.Getrequest().at("Path"))) << std::endl;
+            if (Path[Path.length() - 1] != '/')
+            {
+                std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
+                message += strtim(_request.Getrequest().at("Path")) + "/";
+                message += "\r\nContent-Length: 0\r\n\r\n";
+                send(_ClientFD, message.c_str(), message.size(), 0);
+                FD_CLR(_ClientFD, &w);
+                FD_SET(_ClientFD, &r);
+                done = 1;
+                return;
+            }
+            std::string resp = generate_autoindex(Path, strtim((_request.Getrequest().at("Path"))));
+            std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: ";
+            message += std::to_string(resp.size());
+            message += "\r\n\r\n";
+            message += resp;
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
     }
     if (is_Valide(r, w))
     {

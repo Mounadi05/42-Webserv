@@ -1,0 +1,67 @@
+Listening 4 Port 8000
+timeout
+new clinet 5 on server 4
+from requst :  /var
+from requst 1 :  /var
+path 1 : /var
+result: /var
+_rederict : 1
+redirect to ----> /var
+Client disconnected
+new clinet 5 on server 4
+from requst :  /%20/var/
+from requst 1 :  / /var/
+path 1 : //var/
+result: //va
+_rederict : 1
+redirect to ----> //va
+new clinet 6 on server 4
+Client disconnected
+from requst :  /%20/var/%20/%20/var//
+from requst 1 :  / /var/ / /var//
+path 1 : //var///var//
+result: //va
+_rederict : 1
+redirect to ----> //va
+new clinet 5 on server 4
+Client disconnected
+from requst :  /%20/var/%20/%20/var//%20/%20/var/%20/%20/var///
+from requst 1 :  / /var/ / /var// / /var/ / /var///
+path 1 : //var///var////var///var///
+result: //va
+_rederict : 1
+redirect to ----> //va
+new clinet 6 on server 4
+Client disconnected
+from requst :  /%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////
+from requst 1 :  / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var////
+path 1 : //var///var////var///var/////var///var////var///var////
+result: //va
+_rederict : 1
+redirect to ----> //va
+Client disconnected
+new clinet 5 on server 4
+from requst :  /%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var/////
+from requst 1 :  / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var/////
+path 1 : //var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var/////
+result: //va
+_rederict : 1
+redirect to ----> //va
+Client disconnected
+new clinet 5 on server 4
+from requst :  /%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var/////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var//////
+from requst 1 :  / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var///// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//////
+path 1 : //var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var///////var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var//////
+result: //va
+_rederict : 1
+redirect to ----> //va
+Client disconnected
+new clinet 5 on server 4
+from requst :  /%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var/////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var//////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var/////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var////%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///%20/%20/var/%20/%20/var//%20/%20/var/%20/%20/var///////
+from requst 1 :  / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var///// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var////// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var///// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var//// / /var/ / /var// / /var/ / /var/// / /var/ / /var// / /var/ / /var///////
+path 1 : //var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var///////var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var////////var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var///////var///var////var///var/////var///var////var///var//////var///var////var///var/////var///var////var///var///////
+result: //va
+_rederict : 1
+redirect to ----> //va
+Client disconnected
+new clinet 5 on server 4
