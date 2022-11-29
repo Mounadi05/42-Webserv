@@ -30,6 +30,7 @@ std::string uri_decode(std::string &src)
 Response::Response(Request request, Server *server, int ClientFD)
 {
     _request = request;
+    // std::cout << "Host : " <<_request.Getrequest().at("Host") << std::endl;
     _request.Getrequest().at("Path") = uri_decode(_request.Getrequest().at("Path"));
     _server = server;
     _ClientFD = ClientFD;
@@ -186,7 +187,7 @@ std::string strtim(std::string str) // remove space from start and end
 
 std::string Response::grepLocation(std::string path, std::vector<Location> locations)
 {
-    std::cout << "path 1 : " << path << std::endl;
+    // std::cout << "path 1 : " << path << std::endl;
     std::string result = "";
     for (std::vector<Location>::iterator it = locations.begin(); it != locations.end(); it++)
     {
@@ -196,7 +197,7 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
                 result = path.substr(0, it->getLocationPath().length() + 1);
             else
                 result = path.substr(0, it->getLocationPath().length());
-            std::cout << "result: " << result << std::endl;
+            // std::cout << "result: " << result << std::endl;
             break;
         }
     }
@@ -206,7 +207,7 @@ std::string Response::grepLocation(std::string path, std::vector<Location> locat
     {
         _rederict = 1;
         return (result);
-        std::cout << "redirect to ----> " + result + "/" << std::endl;
+        // std::cout << "redirect to ----> " + result + "/" << std::endl;
     }
     if (result == path)
         _rederict = 2;
@@ -235,10 +236,10 @@ void Response::send_data(fd_set &r, fd_set &w)
     try
     {
         std::string re = location_handler();
-        std::cout << "_rederict : " << _rederict << std::endl;
+        // std::cout << "_rederict : " << _rederict << std::endl;
         if (_rederict == 1)
         {
-            std::cout << "redirect to ----> " + re << std::endl;
+            // std::cout << "redirect to ----> " + re << std::endl;
             std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
             message += strtim(_request.Getrequest().at("Path")) + "/";
             message += "\r\nContent-Length: 0\r\n\r\n";
@@ -250,7 +251,7 @@ void Response::send_data(fd_set &r, fd_set &w)
         }
         else
             Path = re;
-        std::cout << "Path 2 : " << Path << std::endl;
+        // std::cout << "Path 2 : " << Path << std::endl;
         if (stat(Path.c_str(), &st) == -1)
         {
             std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
@@ -262,7 +263,7 @@ void Response::send_data(fd_set &r, fd_set &w)
         }
         if (S_ISDIR(st.st_mode))
         {
-            std::cout << "r_path : " << strtim((_request.Getrequest().at("Path"))) << std::endl;
+            // std::cout << "r_path : " << strtim((_request.Getrequest().at("Path"))) << std::endl;
             if (Path[Path.length() - 1] != '/')
             {
                 std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";

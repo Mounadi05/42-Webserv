@@ -91,6 +91,15 @@ void IOMultiplexing::setFdMax(int fd)
     _fdmax = fd;
 }
 
+std::string trim(std::string &str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (std::string::npos == first)
+        return str;
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
 void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
 {
     fd_set readcpy, writecpy;
@@ -165,11 +174,28 @@ void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
+                            Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                            Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
-                            // std::cout <<"check : " <<ClientRequest[i].first.getServer().a << std::endl;
-                            ReadyResponse.push_back(resp);
+                            for (size_t j = 0; j < servers.size(); j++)
+                            {
+                                for (size_t k = 0; k < servers[j]->getServerNames().size(); k++)
+                                {
+                                    if (servers[j]->getServerNames()[k] == trim(ClientRequest[i].second.Getrequest().at("Host"))
+                                    && std::to_string(servers[j]->getPort()) == trim(ClientRequest[i].second.Getrequest().at("Port")))
+                                    {
+                                        resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
+                                        ReadyResponse.push_back(resp);
+                                        break;
+                                    }
+                                    else if (std::to_string(servers[j]->getPort()) == trim(ClientRequest[i].second.Getrequest().at("Port")))
+                                    {
+                                        resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                        ReadyResponse.push_back(resp);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
