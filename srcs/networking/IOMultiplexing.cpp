@@ -40,14 +40,26 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
     sockaddr->sin_family = AF_INET;
     sockaddr->sin_port = htons(port);
     sockaddr->sin_addr.s_addr = INADDR_ANY;
-    if (std::find(io.AlreadyBind.begin(), io.AlreadyBind.end(), port) == io.AlreadyBind.end())
+    
+    int used = 0;
+    int usedfd;
+    for (size_t i = 0; i < io.AlreadyBind.size(); i++)
     {
-        io.AlreadyBind.push_back(port);
+        if (io.AlreadyBind[i].second == port)
+        {
+            used = 1;
+            usedfd = io.AlreadyBind[i].first;
+        }
+    }
+    
+    if (!used)
+    {
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
             printError("Socket creation failed");
             return (-1);
         }
+        io.AlreadyBind.push_back(std::pair<int, int>(fd, port));
         // std::cout << "Socket created " << fd << std::endl;
         int val = 1;
         if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1)
@@ -73,6 +85,10 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
         io.setFdMax(fd);
         setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
         return (fd);
+    }
+    else
+    {
+        sock.setSocketFd(usedfd);
     }
     return (0);
 }
@@ -185,6 +201,7 @@ void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
                                     && std::to_string(servers[j]->getPort()) == trim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {
                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
+                                        // std::cout << servers[j]->getSocket().getSocketFd() << std::endl;
                                         ReadyResponse.push_back(resp);
                                         break;
                                     }

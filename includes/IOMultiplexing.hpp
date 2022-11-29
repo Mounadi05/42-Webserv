@@ -12,7 +12,7 @@ public:
     fd_set fdwrite;
     fd_set fdread;
     int _fdmax;
-    std::vector<int> AlreadyBind;
+    std::vector<std::pair<int ,int> > AlreadyBind;
     IOMultiplexing();
     ~IOMultiplexing();
     void SetupServers(Config &conf);
