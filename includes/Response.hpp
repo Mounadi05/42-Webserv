@@ -48,6 +48,7 @@ class Response
         int isNotAllowedMethod();
         int isPayloadTooLarge(struct stat *st);
         int httpVersionNotSupported();
+        int shouldListDirectoryContent();
 };
 
 #endif

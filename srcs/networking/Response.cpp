@@ -268,10 +268,22 @@ int Response::isPayloadTooLarge(struct stat *st)
             std::cout << "Sizeof Requested File : " << size << "\n" << "ClientMaxBodySize : " << std::stoi(locationBlock.getClientMaxBodySize()) << std::endl;
             if (size > std::stoi(locationBlock.getClientMaxBodySize()))
                 return 1;
-            else
-                return 0;
         }
         return 0;
+    }
+    return 0;
+}
+
+int Response::shouldListDirectoryContent()
+{
+    if (_location_index != -1)
+    {
+        Location locationBlock = _server->getLocations()[_location_index];
+        if (locationBlock.getAutoIndex().size() != 0)
+        {
+            if (locationBlock.getAutoIndex().compare("on") == 0)
+                return 1;
+        }
     }
     return 0;
 }
@@ -370,6 +382,18 @@ void Response::send_data(fd_set &r, fd_set &w)
                     std::string header;
                     header = (char *)"HTTP/1.1 413 PayloadTooLarge\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + get_type("./error/payloadTooLarge.html") + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
                     write(_ClientFD, header.c_str(), header.size());
+                    finish = 10;
+                }
+                if (shouldListDirectoryContent() == 1)
+                {
+                    std::string resp = generate_autoindex(Path.substr(0, Path.find_last_of("/")), strtim((_request.Getrequest().at("Path"))));
+                    //std::cout << "Path : " << Path << "\n" << "r_path : " << strtim((_request.Getrequest().at("Path"))) << std::endl;
+                    std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\nContent-Length: ";
+                    message += std::to_string(resp.size());
+                    message += "\r\n\r\n";
+                    message += resp;
+                    send(_ClientFD, message.c_str(), message.size(), 0);
+                    done = 1;
                     finish = 10;
                 }
                 if (!finish)
