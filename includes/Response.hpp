@@ -45,6 +45,9 @@ class Response
         std::string getLocationRefere();
         std::string location_handler();
         std::string grepLocation(std::string path, std::vector<Location> locations);
+        int isNotAllowedMethod();
+        int isPayloadTooLarge(struct stat *st);
+        int httpVersionNotSupported();
 };
 
 #endif

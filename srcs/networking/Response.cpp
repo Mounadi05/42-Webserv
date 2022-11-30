@@ -108,7 +108,6 @@ int Response::handler(fd_set &r, fd_set &w)
 
 int Response::is_Valide(fd_set &r, fd_set &w)
 {
-    std::cout << _location_index << std::endl;
     std::string Method = _request.Getrequest().at("Method");
     std::string Version = _request.Getrequest().at("Version");
     if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE" && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK" && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" && Method != "PROPFIND" && Method != "VIEW" && Version != "HTTP/1.1" && Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
@@ -231,6 +230,52 @@ std::string Response::location_handler()
 
 std::string generate_autoindex(std::string path, std::string r_path);
 
+int Response::isNotAllowedMethod()
+{
+    if (_location_index != -1)
+    {
+        Location locationBlock = _server->getLocations()[_location_index];
+        if (locationBlock.getAllowedMethods().size() != 0)
+        {
+            for (size_t i = 0; i < locationBlock.getAllowedMethods().size(); i++)
+            {
+                if (_request.Getrequest().at("Method").compare(locationBlock.getAllowedMethods()[i]) == 0)
+                    return 0;
+            }
+        }
+        return 1;
+    }
+    return 1;
+}
+
+int Response::httpVersionNotSupported()
+{
+    if (_request.Getrequest().at("Version").compare("HTTP/1.0") != 0 && _request.Getrequest().at("Version").compare("HTTP/1.1") != 0)
+        return 1;
+    else
+        return 0;
+}
+
+int Response::isPayloadTooLarge(struct stat *st)
+{
+    stat((const char *)Path.c_str(), st);
+    size = (*st).st_size;
+    if (_location_index != -1)
+    {
+        Location locationBlock = _server->getLocations()[_location_index];
+        if (locationBlock.getClientMaxBodySize().size() != 0)
+        {
+            std::cout << "Sizeof Requested File : " << size << "\n" << "ClientMaxBodySize : " << std::stoi(locationBlock.getClientMaxBodySize()) << std::endl;
+            if (size > std::stoi(locationBlock.getClientMaxBodySize()))
+                return 1;
+            else
+                return 0;
+        }
+        return 0;
+    }
+    return 0;
+}
+
 void Response::send_data(fd_set &r, fd_set &w)
 {
     struct stat st;
@@ -294,6 +339,39 @@ void Response::send_data(fd_set &r, fd_set &w)
         {
             if (access((const char *)Path.c_str(), F_OK) != -1)
             {
+                if (isNotAllowedMethod() == 1)
+                {
+                    stat("./error/notAllowed.html", &st);
+                    size = st.st_size;
+                    fd = open("./error/notAllowed.html", O_RDONLY);
+                    bzero(str, 1025);
+                    std::string header;
+                    header = (char *)"HTTP/1.1 405 NotAllowed\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + get_type("./error/notAllowed.html") + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+                    write(_ClientFD, header.c_str(), header.size());
+                    finish = 10;
+                }
+                if (httpVersionNotSupported() == 1)
+                {
+                    stat("./error/httpVersionNotSupportted.html", &st);
+                    size = st.st_size;
+                    fd = open("./error/httpVersionNotSupportted.html", O_RDONLY);
+                    bzero(str, 1025);
+                    std::string header;
+                    header = (char *)"HTTP/1.1 505 VersionNotSupportted\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + get_type("./error/httpVersionNotSupportted.html") + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+                    write(_ClientFD, header.c_str(), header.size());
+                    finish = 10;
+                }
+                if (isPayloadTooLarge(&st) == 1)
+                {
+                    stat("./error/payloadTooLarge.html", &st);
+                    size = st.st_size;
+                    fd = open("./error/payloadTooLarge.html", O_RDONLY);
+                    bzero(str, 1025);
+                    std::string header;
+                    header = (char *)"HTTP/1.1 413 PayloadTooLarge\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: " + get_type("./error/payloadTooLarge.html") + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+                    write(_ClientFD, header.c_str(), header.size());
+                    finish = 10;
+                }
                 if (!finish)
                 {
                     stat((const char *)Path.c_str(), &st);
