@@ -386,15 +386,17 @@ void Response::send_data(fd_set &r, fd_set &w)
                 }
                 if (shouldListDirectoryContent() == 1)
                 {
-                    std::string resp = generate_autoindex(Path.substr(0, Path.find_last_of("/")), strtim((_request.Getrequest().at("Path"))));
-                    //std::cout << "Path : " << Path << "\n" << "r_path : " << strtim((_request.Getrequest().at("Path"))) << std::endl;
-                    std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\nContent-Length: ";
-                    message += std::to_string(resp.size());
-                    message += "\r\n\r\n";
-                    message += resp;
-                    send(_ClientFD, message.c_str(), message.size(), 0);
-                    done = 1;
-                    finish = 10;
+                    if (S_ISDIR(st.st_mode))
+                    {
+                        std::string resp = generate_autoindex(Path.substr(0, Path.find_last_of("/")), strtim((_request.Getrequest().at("Path"))));
+                        std::string message = (char *)"HTTP/1.1 200 OK\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\nContent-Length: ";
+                        message += std::to_string(resp.size());
+                        message += "\r\n\r\n";
+                        message += resp;
+                        send(_ClientFD, message.c_str(), message.size(), 0);
+                        done = 1;
+                        finish = 10;
+                    }
                 }
                 if (!finish)
                 {
