@@ -40,8 +40,9 @@ Response::Response(Request request, Server *server, int ClientFD)
     size = 0;
     _send = 0;
     done = 0;
-    _refere = 0;
+    // _refere = 0;
     _rederict = 0;
+    _location_index = -1;
 }
 
 Response::~Response()
@@ -107,7 +108,7 @@ int Response::handler(fd_set &r, fd_set &w)
 
 int Response::is_Valide(fd_set &r, fd_set &w)
 {
-
+    std::cout << _location_index << std::endl;
     std::string Method = _request.Getrequest().at("Method");
     std::string Version = _request.Getrequest().at("Version");
     if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE" && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK" && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" && Method != "PROPFIND" && Method != "VIEW" && Version != "HTTP/1.1" && Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
@@ -152,7 +153,10 @@ Location &Response::define_location(std::string location_path)
     for (std::vector<Location>::iterator it = _server->getLocations().begin(); it != _server->getLocations().end(); it++)
     {
         if (location_path.find(it->getLocationPath()) != std::string::npos)
+        {
+            _location_index = (it  - _server->getLocations().begin());
             return *it;
+        }
     }
 
     throw std::runtime_error("Location not found");

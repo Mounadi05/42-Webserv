@@ -1,5 +1,5 @@
-#include "../../includes/Webserv.hpp"
 #include <utility>
+#include "../../includes/Webserv.hpp"
 
 #define DONE 1
 #define NOT_FINISHED 0
@@ -190,9 +190,11 @@ void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
+                            bool found = 0;
                             Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+
                             for (size_t j = 0; j < servers.size(); j++)
                             {
                                 for (size_t k = 0; k < servers[j]->getServerNames().size(); k++)
@@ -200,18 +202,28 @@ void EventLoop(std::vector<Server*> &servers, IOMultiplexing &io)
                                     if (servers[j]->getServerNames()[k] == trim(ClientRequest[i].second.Getrequest().at("Host"))
                                     && std::to_string(servers[j]->getPort()) == trim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {
+                                        // std::cout << "matched with server fd : " << servers[j]->getSocket().getSocketFd() << std::endl;
                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
                                         // std::cout << servers[j]->getSocket().getSocketFd() << std::endl;
                                         ReadyResponse.push_back(resp);
+                                        found = 1;
                                         break;
                                     }
                                     else if (std::to_string(servers[j]->getPort()) == trim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {
+                                        // std::cout << "1 matched with server fd : " << servers[j]->getSocket().getSocketFd() << std::endl;
                                         resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                                         ReadyResponse.push_back(resp);
+                                        found = 1;
                                         break;
                                     }
                                 }
+                            }
+                            if (!found)
+                            {
+                                std::cout << "not matched with any server so it save the default" << std::endl;
+                                resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                ReadyResponse.push_back(resp);
                             }
                         }
                     }

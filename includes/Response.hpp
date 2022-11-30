@@ -20,6 +20,7 @@ class Response
         int done;
         std::string Path;
         std::vector<std::string> index;
+        int _location_index;
     public:
         int _rederict;
         int _refere;
