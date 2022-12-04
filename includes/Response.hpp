@@ -21,11 +21,14 @@ class Response
         int done;
         std::string Path;
         std::string full_path;
-        std::vector<std::string> index;
         std::string root;
         int en_handle;
         int post;
         std::string upload;
+         u_int64_t lent_upload;
+        int fd_upload;
+         u_int64_t lent_chunked;
+        u_int64_t lent_server;
      public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -50,6 +53,10 @@ class Response
         void send_data(fd_set &r , fd_set &w);
         int  handle_autoindex(fd_set &r , fd_set &w);
         int  check_upload(fd_set &r , fd_set &w);
+        void handle_upload(fd_set &r , fd_set &w);
+        int last_slash();
+        void write_body(char *str,fd_set &r , fd_set &w);
+
 };
 
 #endif

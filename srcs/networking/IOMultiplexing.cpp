@@ -127,7 +127,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
     vl.tv_usec = 0;
     std::vector<std::pair<Client, Request> > ClientRequest;
     std::vector<Response> ReadyResponse;
-
     while (1)
     {
         readcpy = io.fdread;
@@ -190,7 +189,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
-                           // std::cout << "hhhh" << std::endl;
                             bool found = 0;
                             Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
@@ -220,8 +218,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             }
                             if (!found)
                             {
-                                std::cout << "not matched with any server so it save the default" << std::endl;
-                                resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                 resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                                 ReadyResponse.push_back(resp);
                             }
                         }

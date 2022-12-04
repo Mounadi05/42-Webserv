@@ -5,14 +5,15 @@ Request::Request()
     header = 0;
     first_line = 0;
     done = 0;
-    body = new char[1025];
     body_length = 0;
     fd = 0;
     finished = 0;
     size = 0;
     send = 0;
     connection = 0;
-    init_map();
+    chunked = 0;
+    full = 0;
+    ok = 0;
 }
 Request::~Request()
 {
@@ -21,14 +22,19 @@ std::map<std::string, std::string> &Request::Getrequest(void)
 {
     return request;
 }
+std::string Request::send_body(void)
+{
+    return body;
+}
+int &Request::GetLent(void)
+{
+    return body_length;  
+}
 int &Request::Getheader(void)
 {
     return header;
 }
-// int &Request::Getstatus_code(void)
-// {
-//     return status_code;
-// }
+
 int &Request::Getfirst_line(void)
 {
     return first_line;
@@ -53,9 +59,13 @@ int &Request::get_send(void)
 {
         return send;
 }
-int &Request::get_size(void)
+// int &Request::get_size(void)
+// {
+//         return size;
+// }
+int &Request::check_chunked(void)
 {
-        return size;
+    return chunked;
 }
 void Request::get_body(char *str)
 {
@@ -63,8 +73,12 @@ void Request::get_body(char *str)
     int i = tmp.find("\r\n\r\n", 0) + 4;
     int a = 0;
     while (i < _length)
-        body[a++] = str[i++];
+    {
+        body.push_back(str[i++]);
+        a++;
+    }
     body_length = a;
+    full += a;
 }
 void Request::handel_host_port(void)
 {   
@@ -75,18 +89,6 @@ void Request::handel_host_port(void)
     {
         request.at("Host") = tmp.substr(0,index);
         request.at("Port") = tmp.substr(index+1,4);
-    }
-}
-
-void Request::write_body(char *str)
-{
-    send +=  body_length;
-    write(fd, str, body_length);
-    if (send >= size)
-    {
-        finished = 1;
-        std::cout << "done" << std::endl;
-        close(fd);
     }
 }
 
@@ -123,9 +125,7 @@ Request &Request::operator=(const Request &req)
 {
     if (this != &req)
     {
-        // delete this->body;
-        this->body = new char[1025];
-        // strlcpy(this->body,req.body,body_length - 1);
+        this->body = req.body;
         this->body_length = req.body_length;
         this->fd = req.fd;
         this->header = req.header;
@@ -135,6 +135,11 @@ Request &Request::operator=(const Request &req)
         this->first_line = req.first_line;
         this->done = req.done;
         this->connection = req.connection;
+        this->chunked = req.chunked;
+        this->full = req.full;
+        this->send = req.send;
+        this->size = req.size;
+        this->ok = req.ok;
     }
     return *this;
 }
@@ -148,18 +153,32 @@ void Request::handle_request(char *str)
     std::string check = str;
     int hold = 0;
     int i = 0;
+    if (finished && request.at("Method") == "POST")
+    {
+        body_length = _length;
+        std::string tmp (str,body_length);
+        body = tmp;
+        std::cout << "****** > " << std::endl;
+        write(1,body.c_str(),_length);
+        std::cout << "****** > " << std::endl;
+        if (full >= size)
+            ok = 1;
+    }
     if (!finished)
     {
+        init_map();
         check_request(str);
         if (first_line)
         {
-             index = buffer.find(delemiter, index) + 2;
+            index = buffer.find(delemiter, index) + 2;
             do
             {
                 hold = buffer.find(delemiter, index);
                 value = buffer.substr(index, hold - index);
                 if ((int)value.find("Connection",0) != -1)
                     connection = 1;
+                if ((int)value.find("chunked",0) != -1)
+                    chunked = 1;
                 i = value.find(":", 0);
                 if ((int)value.find("Host") != -1)
                     request.at("Host") = value.substr(i + 1, value.size() - i);
@@ -167,27 +186,17 @@ void Request::handle_request(char *str)
                     request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
                 index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
-            // if (request.at("Method") == "POST")
-            // {
-            //     finished = 0;
-            //     done = 1;
-            //     size = atoi(request.at("Content-Length").c_str());
-            //     write_body(body);
-            // }
         }
         finished = 1;
+        ok = 1;
         if (!connection)
             request.insert(std::pair<std::string, std::string>("Connection","close"));
         handel_host_port();
+        if (request.at("Method") == "POST")
+        {size = strtoull(request.at("Content-Length").c_str(),NULL, 10);
+            ok = 0;};
      }
-    // else if (done && finished)
-    // {
-    //     body_length = _length;
-    //     write_body(str);
-    // }
-    std::cout << request.at("Host");
- }
-
+  }
 
 void Request::check_request(char *tmp)
 {
@@ -201,6 +210,7 @@ void Request::check_request(char *tmp)
         first_line = 1;
     }
 }
+
 void Request::valid_request(std::string str)
 {
     int index = 0;
@@ -220,6 +230,7 @@ void Request::valid_request(std::string str)
     if (!(request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
         first_line = 1;
 }
+
 std::string Request::get_header(std::string str)
 {
     std::string tmp;
@@ -233,4 +244,9 @@ std::string Request::get_header(std::string str)
         tmp.push_back(str[i]);
     }
     return str;
+}
+
+int Request::get_ok(void)
+{
+    return ok;
 }

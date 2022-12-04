@@ -15,11 +15,14 @@ private:
     int fd;
     int finished;
     int send;
-    int size;
+     u_int64_t size;
     int connection;
+    int chunked;
+    std::string body;
+    u_int64_t full;
+    int ok;
 public:
     std::string buffer;
-    char *body;
     Request();
     ~Request();
     Request(const Request &req);
@@ -43,6 +46,9 @@ public:
     int &get_size(void);
     void init_map(void);
     void handel_host_port(void);
-
+    int  &check_chunked(void);
+    std::string send_body(void);
+    int &GetLent(void);
+    int get_ok(void);
 };
 #endif
