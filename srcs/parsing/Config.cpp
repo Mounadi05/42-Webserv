@@ -202,6 +202,7 @@ void Config::parse()
                 printError("unknown token " + token);
         }
     }
+    //validate config
 }
 
 int check_method(std::string method)

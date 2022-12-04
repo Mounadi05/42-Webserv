@@ -40,14 +40,26 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
     sockaddr->sin_family = AF_INET;
     sockaddr->sin_port = htons(port);
     sockaddr->sin_addr.s_addr = INADDR_ANY;
-    if (std::find(io.AlreadyBind.begin(), io.AlreadyBind.end(), port) == io.AlreadyBind.end())
+
+    int used = 0;
+    int usedfd;
+    for (size_t i = 0; i < io.AlreadyBind.size(); i++)
     {
-        io.AlreadyBind.push_back(port);
+        if (io.AlreadyBind[i].second == port)
+        {
+            used = 1;
+            usedfd = io.AlreadyBind[i].first;
+        }
+    }
+
+    if (!used)
+    {
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
             printError("Socket creation failed");
             return (-1);
         }
+        io.AlreadyBind.push_back(std::pair<int, int>(fd, port));
         // std::cout << "Socket created " << fd << std::endl;
         int val = 1;
         if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1)
@@ -74,6 +86,10 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
         setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
         return (fd);
     }
+    else
+    {
+        sock.setSocketFd(usedfd);
+    }
     return (0);
 }
 
@@ -89,6 +105,17 @@ int IOMultiplexing::getFdMax() const
 void IOMultiplexing::setFdMax(int fd)
 {
     _fdmax = fd;
+}
+
+std::string strtrim(std::string str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
 }
 
 void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
@@ -122,12 +149,14 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 int fdserver = servers[j].getSocket().getSocketFd();
                 if (FD_ISSET(fdserver, &readcpy))
                 {
+                    // std::cout << "A*****************" << std::endl;
                     Client newC;
+                    // std::cout << "B*****************" << std::endl;
                     if ((fd_client = accept(fdserver, NULL, NULL)) != -1)
                     {
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
-                         newC.setServer(servers[j]);
+                        newC.setServer(servers[j]);
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
                         std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
                         io.setFdRead(fd_client);
@@ -163,10 +192,45 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
+                            bool found = 0;
+                            Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-                            Response resp(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
-                            ReadyResponse.push_back(resp);
+
+                            for (size_t j = 0; j < servers.size(); j++)
+                            {
+                                for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
+                                {
+                                    if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host"))
+                                    && std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
+                                    {
+                                        // std::cout << servers[j].getLocations()[0].getLocationPath() << std::endl;
+                                        // std::cout << strtrim(ClientRequest[i].second.Getrequest().at("Host")) << std::endl;
+                                        // std::cout << "matched with server fd : " << servers[j].getSocket().getSocketFd() << std::endl;
+                                        resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
+                                        // std::cout << servers[j].getSocket().getSocketFd() << std::endl;
+                                        ReadyResponse.push_back(resp);
+                                        found = 1;
+                                        break;
+                                    }
+                                    else if (std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
+                                    {
+                                        // std::cout <<  ClientRequest[i].first.getServer().getLocations()[0].getLocationPath() << std::endl;
+                                        // std::cout << strtrim(ClientRequest[i].second.Getrequest().at("Host")) << std::endl;
+                                        // std::cout << "1 matched with server fd : " << servers[j]->getSocket().getSocketFd() << std::endl;
+                                        resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                        ReadyResponse.push_back(resp);
+                                        found = 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!found)
+                            {
+                                std::cout << "not matched with any server so it save the default" << std::endl;
+                                resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                ReadyResponse.push_back(resp);
+                            }
                         }
                     }
                 }
