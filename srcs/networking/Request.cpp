@@ -12,8 +12,9 @@ Request::Request()
     size = 0;
     send = 0;
     connection = 0;
-    init_map();
-   
+    
+           init_map();
+
 }
 Request::~Request()
 {
@@ -48,39 +49,7 @@ void Request::init_map()
     request.insert(std::pair<std::string, std::string>("Path", ""));
     request.insert(std::pair<std::string, std::string>("Method", ""));
 }
-void Request::valid_request(std::string str)
-{
-     int index = 0;
-    int delemiter = 0;
-    std::string tmp;
-    delemiter = str.find(" ", index);
-    tmp = str.substr(index, delemiter);
-    request.at("Method")= tmp;
-    index = delemiter;
-    delemiter = str.find(" ", index + 1);
-    tmp = str.substr(index, delemiter - index);
-    request.at("Path")= tmp;
-    index = delemiter + 1;
-    delemiter = str.find("\r\n", index + 1);
-    tmp = str.substr(index, delemiter - index);
-    request.at("Version")= tmp;
-    if (!(request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
-        first_line = 1;
-}
-std::string Request::get_header(std::string str)
-{
-    std::string tmp;
-    for (int i = 0; str[i]; i++)
-    {
-        if (str[i] == '\r' && str[i + 1] == '\n' && str[i + 2] == '\r' && str[i + 3] == '\n')
-        {
-            tmp += "\r\n\r\n";
-            return tmp;
-        }
-        tmp.push_back(str[i]);
-    }
-    return str;
-}
+
 int &Request::get_send(void)
 {
         return send;
@@ -108,35 +77,6 @@ void Request::handel_host_port(void)
         request.at("Host") = tmp.substr(0,index);
         request.at("Port") = tmp.substr(index+1,4);
     }
-}
-
-void Request::check_request(char *tmp)
-{
-    std::string check = tmp;
-    if (!first_line)
-    {
-        if ((int)check.find("\r\n\r\n", 0) != -1)
-        {
-            header = 1;
-            buffer = get_header(check);
-            valid_request(buffer);
-            get_body(tmp);
-            first_line = 1;
-        }
-        else if ((int)check.find("\r\n", 0) != -1)
-        {
-            valid_request(check);
-            buffer += check;
-        }
-    }
-    else if ((int)check.find("\r\n\r\n", 0) != -1)
-    {
-        buffer += get_header(check);
-        // get_body(buffer.c_str());
-        header = 1;
-    }
-    else
-        buffer += check;
 }
 
 void Request::write_body(char *str)
@@ -169,51 +109,6 @@ void Request::open_file()
     fd = open(path.c_str(), O_CREAT | O_RDWR, 0644);
 }
 
-void Request::handle_request(char *str)
-{
-    int index = 0;
-    std::string delemiter = "\r\n";
-    std::string last = "\r\n\r\n";
-    std::string value;
-    int hold = 0;
-    int i = 0;
-    if (!done && !finished)
-    {
-        check_request(str);
-        if (header && first_line && !finished)
-        {
-            index = buffer.find(delemiter, index) + 2;
-            do
-            {
-                hold = buffer.find(delemiter, index);
-                value = buffer.substr(index, hold - index);
-                if ((int)value.find("Connection",0) != -1)
-                    connection = 1;
-                i = value.find(":", 0);
-                request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
-                value.clear();
-                index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
-            finished = 1;
-            if (request.at("Method") == "POST")
-            {
-                finished = 0;
-                done = 1;
-                size = atoi(request.at("Content-Length").c_str());
-                open_file();
-                write_body(body);
-            }
-        }
-        if (!connection)
-            request.insert(std::pair<std::string, std::string>("Connection","close"));
-        handel_host_port();
-    }
-    else if (done)
-    {
-        body_length = _length;
-        if (request.at("Method") == "POST")
-            write_body(str);
-    }
-}
 
 int &Request::getFinished()
 {
@@ -243,4 +138,96 @@ Request &Request::operator=(const Request &req)
         this->connection = req.connection;
     }
     return *this;
+}
+
+void Request::handle_request(char *str)
+{
+    int index = 0;
+    std::string delemiter = "\r\n";
+    std::string last = "\r\n\r\n";
+    std::string value;
+    std::string check = str;
+    int hold = 0;
+    int i = 0;
+    if (!finished)
+    {
+        check_request(str);
+        if (first_line)
+        {
+            index = buffer.find(delemiter, index) + 2;
+            do
+            {
+                hold = buffer.find(delemiter, index);
+                value = buffer.substr(index, hold - index);
+                if ((int)value.find("Connection",0) != -1)
+                    connection = 1;
+                i = value.find(":", 0);
+                request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
+                value.clear();
+                index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
+            // if (request.at("Method") == "POST")
+            // {
+            //     finished = 0;
+            //     done = 1;
+            //     size = atoi(request.at("Content-Length").c_str());
+            //     write_body(body);
+            // }
+        }
+        finished = 1;
+        if (!connection)
+            request.insert(std::pair<std::string, std::string>("Connection","close"));
+        handel_host_port();
+    }
+    // else if (done && finished)
+    // {
+    //     body_length = _length;
+    //     write_body(str);
+    // }
+}
+
+
+void Request::check_request(char *tmp)
+{
+    std::string check = tmp;
+    if ((int)check.find("\r\n\r\n", 0) != -1)
+    {
+        header = 1;
+        buffer = get_header(check);
+        valid_request(buffer);
+        get_body(tmp);
+        first_line = 1;
+    }
+}
+void Request::valid_request(std::string str)
+{
+    int index = 0;
+    int delemiter = 0;
+    std::string tmp;
+    delemiter = str.find(" ", index);
+    tmp = str.substr(index, delemiter);
+    request.at("Method")= tmp;
+    index = delemiter;
+    delemiter = str.find(" ", index + 1);
+    tmp = str.substr(index, delemiter - index);
+    request.at("Path")= tmp;
+    index = delemiter + 1;
+    delemiter = str.find("\r\n", index + 1);
+    tmp = str.substr(index, delemiter - index);
+    request.at("Version")= tmp;
+    if (!(request.at("Method") == "GET" || request.at("Method") == "POST" || request.at("Method") == "DELETE") && (request.at("Version") == "HTTP/1.1" || request.at("Version") == "HTTP/1.0"))
+        first_line = 1;
+}
+std::string Request::get_header(std::string str)
+{
+    std::string tmp;
+    for (int i = 0; str[i]; i++)
+    {
+        if (str[i] == '\r' && str[i + 1] == '\n' && str[i + 2] == '\r' && str[i + 3] == '\n')
+        {
+            tmp += "\r\n\r\n";
+            return tmp;
+        }
+        tmp.push_back(str[i]);
+    }
+    return str;
 }

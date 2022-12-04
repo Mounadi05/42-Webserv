@@ -149,9 +149,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 int fdserver = servers[j].getSocket().getSocketFd();
                 if (FD_ISSET(fdserver, &readcpy))
                 {
-                    // std::cout << "A*****************" << std::endl;
                     Client newC;
-                    // std::cout << "B*****************" << std::endl;
                     if ((fd_client = accept(fdserver, NULL, NULL)) != -1)
                     {
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
@@ -196,7 +194,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
-
                             for (size_t j = 0; j < servers.size(); j++)
                             {
                                 for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
@@ -204,20 +201,14 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                                     if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host"))
                                     && std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {
-                                        // std::cout << servers[j].getLocations()[0].getLocationPath() << std::endl;
-                                        // std::cout << strtrim(ClientRequest[i].second.Getrequest().at("Host")) << std::endl;
-                                        // std::cout << "matched with server fd : " << servers[j].getSocket().getSocketFd() << std::endl;
                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
-                                        // std::cout << servers[j].getSocket().getSocketFd() << std::endl;
                                         ReadyResponse.push_back(resp);
                                         found = 1;
                                         break;
                                     }
                                     else if (std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {
-                                        // std::cout <<  ClientRequest[i].first.getServer().getLocations()[0].getLocationPath() << std::endl;
-                                        // std::cout << strtrim(ClientRequest[i].second.Getrequest().at("Host")) << std::endl;
-                                        // std::cout << "1 matched with server fd : " << servers[j]->getSocket().getSocketFd() << std::endl;
+                                      
                                         resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                                         ReadyResponse.push_back(resp);
                                         found = 1;
