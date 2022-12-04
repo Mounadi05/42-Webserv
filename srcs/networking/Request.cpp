@@ -12,9 +12,7 @@ Request::Request()
     size = 0;
     send = 0;
     connection = 0;
-    
-           init_map();
-
+    init_map();
 }
 Request::~Request()
 {
@@ -48,6 +46,7 @@ void Request::init_map()
     request.insert(std::pair<std::string, std::string>("Version", ""));
     request.insert(std::pair<std::string, std::string>("Path", ""));
     request.insert(std::pair<std::string, std::string>("Method", ""));
+    request.insert(std::pair<std::string, std::string>("Host", ""));
 }
 
 int &Request::get_send(void)
@@ -141,7 +140,7 @@ Request &Request::operator=(const Request &req)
 }
 
 void Request::handle_request(char *str)
-{
+{    
     int index = 0;
     std::string delemiter = "\r\n";
     std::string last = "\r\n\r\n";
@@ -154,7 +153,7 @@ void Request::handle_request(char *str)
         check_request(str);
         if (first_line)
         {
-            index = buffer.find(delemiter, index) + 2;
+             index = buffer.find(delemiter, index) + 2;
             do
             {
                 hold = buffer.find(delemiter, index);
@@ -162,7 +161,10 @@ void Request::handle_request(char *str)
                 if ((int)value.find("Connection",0) != -1)
                     connection = 1;
                 i = value.find(":", 0);
-                request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
+                if ((int)value.find("Host") != -1)
+                    request.at("Host") = value.substr(i + 1, value.size() - i);
+                else
+                    request.insert(std::pair<std::string, std::string>(value.substr(0, i), value.substr(i + 1, value.size() - i)));
                 value.clear();
                 index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
             // if (request.at("Method") == "POST")
@@ -177,13 +179,14 @@ void Request::handle_request(char *str)
         if (!connection)
             request.insert(std::pair<std::string, std::string>("Connection","close"));
         handel_host_port();
-    }
+     }
     // else if (done && finished)
     // {
     //     body_length = _length;
     //     write_body(str);
     // }
-}
+    std::cout << request.at("Host");
+ }
 
 
 void Request::check_request(char *tmp)

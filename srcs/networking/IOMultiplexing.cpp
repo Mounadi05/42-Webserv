@@ -190,6 +190,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
                         {
+                           // std::cout << "hhhh" << std::endl;
                             bool found = 0;
                             Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
@@ -198,6 +199,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             {
                                 for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
                                 {
+                                    
                                     if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host"))
                                     && std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {

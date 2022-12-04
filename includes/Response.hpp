@@ -24,6 +24,8 @@ class Response
         std::vector<std::string> index;
         std::string root;
         int en_handle;
+        int post;
+        std::string upload;
      public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -47,6 +49,7 @@ class Response
         int redirect_path(fd_set &r , fd_set &w);
         void send_data(fd_set &r , fd_set &w);
         int  handle_autoindex(fd_set &r , fd_set &w);
+        int  check_upload(fd_set &r , fd_set &w);
 };
 
 #endif

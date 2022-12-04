@@ -18,6 +18,7 @@ Response::Response(Request  request,Server  server, int ClientFD)
     _send = 0;
     done = 0;
     en_handle = 0;
+    post = 0;
 }
 
 Response::~Response()
@@ -323,18 +324,40 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
     done = 1;
     return 0;
 }
+
+int Response::check_upload(fd_set &r , fd_set &w)
+{
+    if(!_server.getUploadPath().empty())
+    {
+        upload = _server.getUploadPath();
+        return 1;
+    }
+    std::string message=(char *)"HTTP/1.1 500 \r\nConnection: close\r\nContent-Length: 85";
+    message +="\r\n\r\n<!DOCTYPE html><head><title>Internal Server Error</title></head><body> </body></html>";
+    send(_ClientFD, message.c_str(), message.size(), 0);
+    FD_CLR(_ClientFD, &w);
+    FD_SET(_ClientFD, &r);
+    done = 1;
+    return 0;
+}
 int Response::handler(fd_set &r , fd_set &w)
 {
-    std::cout << "Server fd : " << _server.getSocket().getSocketFd() << std::endl;
-    std::cout << "Location : " << _server.getLocations().size() << std::endl;
-    if (!ok)
+    std::cout << "\n\n\n"<<_request.Getheader() << std::endl;
+     if (!ok)
         full_path = Path = delete_space((_request.Getrequest().at("Path")));
     if(ok || is_Valide(r,w))
         {if(ok || is_Unauthorize(r,w))
             {if(ok || check_location(r,w))
                 {if(ok || handle_redirection(r,w))
                     {if(ok || handle_method(r,w))
-                        {if(ok || redirect_path(r,w))
+                        {
+                            if (delete_space(_request.Getrequest().at("Method")) == "POST")
+                            {if(post || check_upload(r,w))
+                                {
+                                    std::cout << "is ok " << std::endl;
+                                }
+                            }
+                         else if(ok || redirect_path(r,w))
                             {if(ok || handle_index() || handle_autoindex(r,w))
                                 send_data(r,w);
                             }
