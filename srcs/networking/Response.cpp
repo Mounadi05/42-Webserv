@@ -79,8 +79,6 @@ int Response::check_location(fd_set &r , fd_set &w)
 {
     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
-        std::cout <<"Path" << Path << std::endl;
-        
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath() + "/") != -1 || Path == _server.getLocations().at(a).getLocationPath())
         {
             root = _server.getLocations().at(a).getRoot();
@@ -327,7 +325,8 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
 }
 int Response::handler(fd_set &r , fd_set &w)
 {
-    std::cout << _server.getLocations()[0].getLocationPath() << std::endl;
+    std::cout << "Server fd : " << _server.getSocket().getSocketFd() << std::endl;
+    std::cout << "Location : " << _server.getLocations().size() << std::endl;
     if (!ok)
         full_path = Path = delete_space((_request.Getrequest().at("Path")));
     if(ok || is_Valide(r,w))

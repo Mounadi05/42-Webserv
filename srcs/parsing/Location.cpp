@@ -43,17 +43,10 @@ std::string &Location::getAutoIndex()
     return _autoIndex;
 }
 
-std::vector<std::pair<std::string, std::string> > &Location::getErrorPages()
-{
-    return _error_pages;
-}
-
 std::string &Location::getUploadPath()
 {
     return _uploadPath;
 }
-
-// seters
 
 void Location::setLocationNumber(std::string locationNumber)
 {
@@ -88,11 +81,6 @@ void Location::setIndex(std::vector<std::string> index)
 void Location::setAutoIndex(std::string autoIndex)
 {
     _autoIndex = autoIndex;
-}
-
-void Location::setErrorPages(std::vector<std::pair<std::string, std::string> > error_pages)
-{
-    _error_pages = error_pages;
 }
 
 void Location::setUploadPath(std::string uploadPath)

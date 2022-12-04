@@ -15,7 +15,6 @@ class Location
         std::string                                         _clientMaxBodySize;
         std::vector<std::string>                            _index;
         std::string                                         _autoIndex;
-        std::vector<std::pair<std::string, std::string> >   _error_pages;
         std::string                                         _uploadPath;
         std::pair<std::string, std::string>                 _redirection;
     public:
@@ -29,7 +28,6 @@ class Location
         std::string                                         & getClientMaxBodySize();
         std::vector<std::string>                            & getIndex();
         std::string                                         & getAutoIndex();
-        std::vector<std::pair<std::string, std::string> >   & getErrorPages();
         std::string                                         & getUploadPath();
         std::pair<std::string, std::string>                 & getRedirection();
 
@@ -40,7 +38,6 @@ class Location
         void                                                setClientMaxBodySize(std::string clientMaxBodySize);
         void                                                setIndex(std::vector<std::string> index);
         void                                                setAutoIndex(std::string autoIndex);
-        void                                                setErrorPages(std::vector<std::pair<std::string, std::string> > error_pages);
         void                                                setUploadPath(std::string uploadPath);
         void                                                setRedirection(std::pair<std::string, std::string> redirection);
         

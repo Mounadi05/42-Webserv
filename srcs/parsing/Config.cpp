@@ -23,59 +23,6 @@ void Config::SetConfigFile(std::string Path)
         printError("Unable to open " + Path);
 }
 
-void Config::print_servers()
-{
-    for (size_t i = 0; i < _Servers.size(); i++)
-    {
-        std::cout << "Server: " << i << std::endl;
-        // std::cout << "Host: " << _Servers[i].getHost() << std::endl;
-        std::cout << "Port: " << _Servers[i].getPort() << std::endl;
-        std::cout << "Server names: ";
-        for (size_t j = 0; j < _Servers[i].getServerNames().size(); j++)
-            std::cout << _Servers[i].getServerNames()[j] << " ";
-        std::cout << std::endl;
-        std::cout << "Root: " << _Servers[i].getRoot() << std::endl;
-        std::cout << "Autoindex: " << _Servers[i].getAutoIndex() << std::endl;
-        std::cout << "Allowed methods: ";
-        for (size_t j = 0; j < _Servers[i].getAllowedMethods().size(); j++)
-            std::cout << _Servers[i].getAllowedMethods()[j] << " ";
-        std::cout << std::endl;
-        std::cout << "Client max body size: " << _Servers[i].getClientMaxBodySize() << std::endl;
-        std::cout << "Upload path: " << _Servers[i].getUploadPath() << std::endl;
-        std::cout << "Error pages: ";
-        for (size_t j = 0; j < _Servers[i].getErrorPages().size(); j++)
-            std::cout << _Servers[i].getErrorPages()[j].first << " " << _Servers[i].getErrorPages()[j].second;
-        std::cout << std::endl;
-        std::cout << "Indexes: ";
-        for (size_t j = 0; j < _Servers[i].getIndex().size(); j++)
-            std::cout << _Servers[i].getIndex()[j] << " ";
-        std::cout << std::endl;
-        std::cout << "Locations: " << std::endl;
-        for (size_t j = 0; j < _Servers[i].getLocations().size(); j++)
-        {
-            std::cout << "===========================" << std::endl;
-            std::cout << "Location path: " << _Servers[i].getLocations()[j].getLocationPath() << std::endl;
-            std::cout << "Root: " << _Servers[i].getLocations()[j].getRoot() << std::endl;
-            std::cout << "Autoindex: " << _Servers[i].getLocations()[j].getAutoIndex() << std::endl;
-            std::cout << "Allowed methods: ";
-            for (size_t k = 0; k < _Servers[i].getLocations()[j].getAllowedMethods().size(); k++)
-                std::cout << _Servers[i].getLocations()[j].getAllowedMethods()[k] << " ";
-            std::cout << std::endl;
-            std::cout << "Client max body size: " << _Servers[i].getLocations()[j].getClientMaxBodySize() << std::endl;
-            std::cout << "Upload path: " << _Servers[i].getLocations()[j].getUploadPath() << std::endl;
-            std::cout << "Error pages: ";
-            for (size_t k = 0; k < _Servers[i].getLocations()[j].getErrorPages().size(); k++)
-                std::cout << _Servers[i].getLocations()[j].getErrorPages()[k].first << " " << _Servers[i].getLocations()[j].getErrorPages()[k].second;
-            std::cout << std::endl;
-            std::cout << "Indexes: ";
-            for (size_t k = 0; k < _Servers[i].getLocations()[j].getIndex().size(); k++)
-                std::cout << _Servers[i].getLocations()[j].getIndex()[k] << " ";
-            std::cout << std::endl;
-        }
-        std::cout << "---------------------------------" << std::endl;
-    }
-}
-
 void Config::parse()
 {
     std::vector<std::string> curly_phrases;
@@ -122,13 +69,13 @@ void Config::parse()
                     printError("Bad cgi extension");
                 _Servers[n_server - 1].setCgi(std::pair<std::string,std::string>(cgi_path, cgi_extension));
             }
-            else if (token == "root")
-            {
-                std::string root = getNextToken(line);
-                if (root == "")
-                    printError("root without value");
-                _Servers[n_server - 1].setRoot(root);
-            }
+            // else if (token == "root")
+            // {
+            //     std::string root = getNextToken(line);
+            //     if (root == "")
+            //         printError("root without value");
+            //     _Servers[n_server - 1].setRoot(root);
+            // }
             else if (token == "error_page")
             {
                 std::vector<std::pair<std::string, std::string> > error_pages;
@@ -147,35 +94,35 @@ void Config::parse()
                 }
                 _Servers[n_server - 1].setErrorPages(error_pages);
             }
-            else if (token == "index")
-            {
-                std::vector<std::string> indexes;
-                std::string index = getNextToken(line);
-                if (index == "")
-                    printError("index without value");
-                while (index != "")
-                {
-                    indexes.push_back(index);
-                    index = getNextToken(line);
-                }
-                _Servers[n_server - 1].setIndex(indexes);
-            }
-            else if (token == "client_max_body_size")
-            {
-                std::string client_max_body_size = getNextToken(line);
-                if (client_max_body_size == "")
-                    printError("client_max_body_size without value");
-                _Servers[n_server - 1].setClientMaxBodySize(client_max_body_size);
-            }
+            // else if (token == "index")
+            // {
+            //     std::vector<std::string> indexes;
+            //     std::string index = getNextToken(line);
+            //     if (index == "")
+            //         printError("index without value");
+            //     while (index != "")
+            //     {
+            //         indexes.push_back(index);
+            //         index = getNextToken(line);
+            //     }
+            //     _Servers[n_server - 1].setIndex(indexes);
+            // }
+            // else if (token == "client_max_body_size")
+            // {
+            //     std::string client_max_body_size = getNextToken(line);
+            //     if (client_max_body_size == "")
+            //         printError("client_max_body_size without value");
+            //     _Servers[n_server - 1].setClientMaxBodySize(client_max_body_size);
+            // }
             else if (token == "location")
                 handel_location(line, _Servers[n_server - 1]);
-            else if (token == "autoindex")
-            {
-                std::string autoindex = getNextToken(line);
-                if (autoindex == "")
-                    printError("autoindex must be on or off");
-                _Servers[n_server - 1].setAutoIndex(autoindex);
-            }
+            // else if (token == "autoindex")
+            // {
+            //     std::string autoindex = getNextToken(line);
+            //     if (autoindex == "")
+            //         printError("autoindex must be on or off");
+            //     _Servers[n_server - 1].setAutoIndex(autoindex);
+            // }
             else if (token == "upload_path")
             {
                 std::string upload_store = getNextToken(line);
@@ -183,26 +130,25 @@ void Config::parse()
                     printError("upload_path without path");
                 _Servers[n_server - 1].setUploadPath(upload_store);
             }
-            else if (token == "allow_methods")
-            {
-                std::vector<std::string> allow_methods;
+            // else if (token == "allow_methods")
+            // {
+            //     std::vector<std::string> allow_methods;
 
-                std::string allow_method = getNextToken(line);
+            //     std::string allow_method = getNextToken(line);
 
-                if (allow_method == "")
-                    printError("allow_methods without methods");
-                while (allow_method != "")
-                {
-                    allow_methods.push_back(allow_method);
-                    allow_method = getNextToken(line);
-                }
-                _Servers[n_server - 1].setAllowedMethods(allow_methods);
-            }
+            //     if (allow_method == "")
+            //         printError("allow_methods without methods");
+            //     while (allow_method != "")
+            //     {
+            //         allow_methods.push_back(allow_method);
+            //         allow_method = getNextToken(line);
+            //     }
+            //     _Servers[n_server - 1].setAllowedMethods(allow_methods);
+            // }
             else
                 printError("unknown token " + token);
         }
     }
-    //validate config
 }
 
 int check_method(std::string method)
@@ -241,7 +187,6 @@ int is_number(std::string buf)
 
 int valide_error_code(std::string error_code)
 {
-    // int number = 0;
     if (is_number(error_code))
     {
         if (stoi(error_code) < 200)
@@ -271,6 +216,17 @@ std::string Config::getFilePath() const
     return this->_FilePath;
 }
 
+bool valid_location_root(std::string path)
+{
+    struct stat sb;
+    if (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))
+    {
+        if (path[path.length() - 1] == '/')
+            return 1;
+    }
+    return 0;
+}
+
 void Config::handel_location(std::string &line, Server &server)
 {
     Location location;
@@ -280,7 +236,6 @@ void Config::handel_location(std::string &line, Server &server)
     if (token_path == "")
         printError("location path is empty");
     location.setLocationPath(token_path);
-
     // int start = 0;
     while (skip_empty_lines(_Configfile) && getline(_Configfile, line))
     {
@@ -307,7 +262,6 @@ void Config::handel_location(std::string &line, Server &server)
             {
                 std::vector<std::string> methods;
                 std::string method = getNextToken(line);
-                // std::cout << check_method(method) << ":" << method << std::endl;
                 if (method == "")
                     printError("allow_methods is empty");
                 while (method != "")
@@ -316,7 +270,6 @@ void Config::handel_location(std::string &line, Server &server)
                         printError("bad methos as argument");
                     methods.push_back(method);
                     method = getNextToken(line);
-                    // std::cout << check_method(method) << ":" << method << std::endl;
                 }
                 location.setAllowedMethods(methods);
             }
@@ -335,7 +288,10 @@ void Config::handel_location(std::string &line, Server &server)
                 std::string root = getNextToken(line);
                 if (root == "")
                     printError("root is empty");
-                location.setRoot(root);
+                if (valid_location_root(root))
+                    location.setRoot(root);
+                else
+                    printError("root is not a valid path");
             }
             else if (token == "autoindex")
             {
