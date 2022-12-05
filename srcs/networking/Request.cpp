@@ -153,17 +153,17 @@ void Request::handle_request(char *str)
     std::string check = str;
     int hold = 0;
     int i = 0;
-    // if (finished && request.at("Method") == "POST")
-    // {
-    //     body_length = _length;
-    //     std::string tmp (str,body_length);
-    //     body = tmp;
-    //     std::cout << "****** > " << std::endl;
-    //     write(1,body.c_str(),_length);
-    //     std::cout << "****** > " << std::endl;
-    //     if (full >= size)
-    //         ok = 1;
-    // }
+    if (finished && request.at("Method") == "POST")
+    {
+        body_length = _length;
+        std::string tmp (str,body_length);
+        body = tmp;
+        std::cout << "****** > " << std::endl;
+        write(1,body.c_str(),_length);
+        std::cout << "****** > " << std::endl;
+        if (full >= size)
+            ok = 1;
+    }
     if (!finished)
     {
         init_map();
