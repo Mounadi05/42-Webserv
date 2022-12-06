@@ -184,7 +184,8 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     }
                     else
                     {
-                        ClientRequest[i].second = Request();
+                         if (ClientRequest[i].second.get_ok() == 0)
+                            ClientRequest[i].second = Request();
                         ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
                         if (ClientRequest[i].second.getFinished() == 1)
@@ -197,7 +198,6 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             {
                                 for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
                                 {
-                                    
                                     if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host"))
                                     && std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
                                     {

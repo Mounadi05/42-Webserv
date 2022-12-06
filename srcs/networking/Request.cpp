@@ -14,6 +14,7 @@ Request::Request()
     chunked = 0;
     full = 0;
     ok = 0;
+
 }
 Request::~Request()
 {
@@ -26,9 +27,9 @@ std::string Request::send_body(void)
 {
     return body;
 }
-int &Request::GetLent(void)
+u_int64_t &Request::GetLent(void)
 {
-    return body_length;  
+    return full;  
 }
 int &Request::Getheader(void)
 {
@@ -53,6 +54,7 @@ void Request::init_map()
     request.insert(std::pair<std::string, std::string>("Path", ""));
     request.insert(std::pair<std::string, std::string>("Method", ""));
     request.insert(std::pair<std::string, std::string>("Host", ""));
+    request.insert(std::pair<std::string, std::string>("Content-Length", ""));
 }
 
 int &Request::get_send(void)
@@ -80,6 +82,7 @@ void Request::get_body(char *str)
     body_length = a;
     full += a;
 }
+
 void Request::handel_host_port(void)
 {   
     request.insert(std::pair<std::string, std::string>("Port",""));
@@ -92,24 +95,35 @@ void Request::handel_host_port(void)
     }
 }
 
-void Request::delete_space(std::string &str)
-{
-    for (int i = 0; str[i]; i++)
-        if (str[i] == ' ')
-            str.erase(str[i], 1);
-}
 
+std::string Request::get_tmp()
+{
+    return path_tmp;
+}
+std::string delete_space(std::string str)
+{   
+    for(int i = 0; str[i]; i++)
+        if (str[i] == ' ')
+            str.erase(i,1);
+    return str;
+}
+int last_slash(std::string tmp)
+{
+    int a = 0;
+    int i = 0;
+    a = i = tmp.find("/",0);
+    while(i != -1)
+    {
+        a = i;
+        i = tmp.find("/",i+1);
+    }
+    return a;
+}
 void Request::open_file()
 {
-    std::string tmp = request.at("Content-Type").substr(request.at("Content-Type").find("/", 0) + 1, request.at("Content-Type").size());
-    std::string path1 = request.at("Path").substr(request.at("Path").find("/", 0) + 1, request.at("Path").size());
-    delete_space(tmp);
-    std::string path = (char *)"www/upload/";
-    delete_space(path1);
-    path += path1 + "." + tmp;
-    fd = open(path.c_str(), O_CREAT | O_RDWR, 0644);
+    path_tmp = "tmp"+ delete_space(request.at("Path").substr(last_slash(request.at("Path"))));
+    fd = open(path_tmp.c_str(),O_CREAT|O_RDWR,0777);
 }
-
 
 int &Request::getFinished()
 {
@@ -140,8 +154,21 @@ Request &Request::operator=(const Request &req)
         this->send = req.send;
         this->size = req.size;
         this->ok = req.ok;
+        this->path_tmp = req.path_tmp;
     }
     return *this;
+}
+
+void Request::write_body()
+{
+    int a = write(fd,body.c_str(),body.length());
+    full += a;
+    if (full >= size)
+    {
+        close(fd);
+        finished = 1;
+        ok = 0;
+    } 
 }
 
 void Request::handle_request(char *str)
@@ -153,18 +180,14 @@ void Request::handle_request(char *str)
     std::string check = str;
     int hold = 0;
     int i = 0;
-    if (finished && request.at("Method") == "POST")
+    if (ok)
     {
         body_length = _length;
         std::string tmp (str,body_length);
         body = tmp;
-        std::cout << "****** > " << std::endl;
-        write(1,body.c_str(),_length);
-        std::cout << "****** > " << std::endl;
-        if (full >= size)
-            ok = 1;
+         write_body();
     }
-    if (!finished)
+    if (!finished && !ok)
     {
         init_map();
         check_request(str);
@@ -180,6 +203,8 @@ void Request::handle_request(char *str)
                 if ((int)value.find("chunked",0) != -1)
                     chunked = 1;
                 i = value.find(":", 0);
+                if ((int)value.find("Content-Length") != -1)
+                    request.at("Content-Length") = value.substr(i + 1, value.size() - i);
                 if ((int)value.find("Host") != -1)
                     request.at("Host") = value.substr(i + 1, value.size() - i);
                 else
@@ -188,13 +213,17 @@ void Request::handle_request(char *str)
                 index = hold + 2;            } while (buffer.substr(buffer.find(delemiter, index - 2), buffer.size()) != last);
         }
         finished = 1;
-        ok = 1;
         if (!connection)
             request.insert(std::pair<std::string, std::string>("Connection","close"));
         handel_host_port();
-        if (request.at("Method") == "POST")
-        {size = strtoull(request.at("Content-Length").c_str(),NULL, 10);
-            ok = 0;};
+        if (request.at("Method") == "POST" && (!request.at("Content-Length").empty() || chunked  == 1))
+        {
+            open_file();
+            size = strtoull(request.at("Content-Length").c_str(),NULL, 10);
+            ok = 1;
+            finished = 0;
+            write_body();
+        }
      }
   }
 
@@ -245,8 +274,7 @@ std::string Request::get_header(std::string str)
     }
     return str;
 }
-
-int Request::get_ok(void)
+int Request::get_ok()
 {
     return ok;
 }

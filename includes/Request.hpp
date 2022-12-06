@@ -15,12 +15,13 @@ private:
     int fd;
     int finished;
     int send;
-     u_int64_t size;
+    u_int64_t size;
     int connection;
     int chunked;
     std::string body;
     u_int64_t full;
     int ok;
+    std::string path_tmp;
 public:
     std::string buffer;
     Request();
@@ -40,7 +41,6 @@ public:
     void get_body(char *str);
     void write_body(char *str);
     void open_file(void);
-    void delete_space(std::string &str);
     int &getFinished();
     int &get_send(void);
     int &get_size(void);
@@ -48,7 +48,9 @@ public:
     void handel_host_port(void);
     int  &check_chunked(void);
     std::string send_body(void);
-    int &GetLent(void);
-    int get_ok(void);
+    u_int64_t &GetLent(void);
+    void write_body();
+    std::string get_tmp();
+    int get_ok();
 };
 #endif

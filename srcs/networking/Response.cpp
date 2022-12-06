@@ -20,8 +20,6 @@ Response::Response(Request  request,Server  server, int ClientFD)
     en_handle = 0;
     post = 0;
     fd_upload = 0;
-    lent_upload = 0;
-    lent_chunked = 0;
     lent_server = 0;
 }
 
@@ -99,7 +97,6 @@ int Response::check_location(fd_set &r , fd_set &w)
     return 0;
 }
  
-
 int Response::is_Valide(fd_set &r , fd_set &w)
 {
 
@@ -120,7 +117,6 @@ int Response::is_Valide(fd_set &r , fd_set &w)
     }
     return 1;
 }
-
 int Response::handle_redirection(fd_set &r , fd_set &w)
 {
     Path = delete_space((_request.Getrequest().at("Path")));
@@ -362,52 +358,55 @@ int Response::last_slash()
     return a;
 }
 
-void Response::write_body(char *str,fd_set &r , fd_set &w)
+void Response::write_body(fd_set &r , fd_set &w)
 {
-    lent_chunked +=  _request.GetLent();
-    write(fd_upload, str, _request.GetLent());
-    if (lent_chunked >= lent_upload)
-    {
-        std::string message = (char *)"HTTP/1.1 201 Created\r\nLocation: ";
-        message +=upload + "\r\nContent-Length: 0\r\n\r\n";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-        std::cout<< "is : "<< lent_chunked << std::endl;
-        close(fd_upload);
-    }
-    else
-    {
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-    }
-
+    std::cout << "post" << std::endl;
+    // char reso[1024];
+    // char old_reso[1024];
+    // realpath(upload.c_str(), reso);
+    // realpath(_request.get_tmp().c_str(), old_reso);
+    // std::cout<<"reso :" << reso << std::endl;
+    // std::cout<<"old_reso : " << old_reso << std::endl;
+    std::cout << "upload is finished" << std::endl;
+    rename(_request.get_tmp().c_str(),upload.c_str());
+    std::string message = (char *)"HTTP/1.1 201 Created\r\nLocation: ";
+    message +=upload + "\r\nContent-Length: 0\r\n\r\n";
+    send(_ClientFD, message.c_str(), message.size(), 0);
+    FD_CLR(_ClientFD, &w);
+    FD_SET(_ClientFD, &r);
+    done = 1;
 }
-void Response::handle_upload(fd_set &r , fd_set &w)
+int Response::isToo_large(fd_set &r , fd_set &w)
 {
-    if (!post)
-    {
-        post = 1;
-        ok = 1;
-        fd_upload = open(upload.c_str(), O_CREAT | O_RDWR, 0644);
-    }
     if (_request.check_chunked() == 0)
     {
-        lent_upload = strtoull(_request.Getrequest().at("Content-Length").c_str(),NULL, 10);
-        if(lent_upload > lent_server)
+         if(_request.GetLent() > lent_server)
         {
-            std::string message=(char *)"HTTP/1.1 413 \r\nConnection: close\r\nContent-Length: 85";
+            std::string message=(char *)"HTTP/1.1 413 \r\nConnection: close\r\nContent-Length: 81";
             message +="\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
             send(_ClientFD, message.c_str(), message.size(), 0);
             FD_CLR(_ClientFD, &w);
             FD_SET(_ClientFD, &r);
             done = 1;
-            close(fd_upload);
+            return 0;
         }
-        else
-            write_body((char *)_request.send_body().c_str(),r ,w);
     }
+    return 1;
+}
+
+int Response::check_lent(fd_set &r , fd_set &w)
+{
+    if (_request.check_chunked() == 0 && _request.Getrequest().at("Content-Length").empty())
+    {
+        std::string message=(char *)"HTTP/1.1 411 \r\nConnection: close\r\nContent-Length: 79";
+        message +="\r\n\r\n<!DOCTYPE html><head><title>Length Required</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return 0;
+    }
+    return 1;
 }
 
 int Response::handler(fd_set &r , fd_set &w)
@@ -420,8 +419,12 @@ int Response::handler(fd_set &r , fd_set &w)
                 {if(ok || handle_redirection(r,w))
                     {if(ok || handle_method(r,w))
                         {if (delete_space(_request.Getrequest().at("Method")) == "POST")
-                            {if(post || check_upload(r,w))
-                                handle_upload(r,w);
+                            {if(check_upload(r,w))
+                                {if(check_lent(r,w))
+                                    {if(isToo_large(r,w))
+                                        write_body(r,w);
+                                    }
+                                }
                             }
                          else if(ok || redirect_path(r,w))
                             {if(ok || handle_index() || handle_autoindex(r,w))
