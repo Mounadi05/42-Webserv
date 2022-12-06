@@ -409,6 +409,119 @@ int Response::check_lent(fd_set &r , fd_set &w)
     return 1;
 }
 
+int Response::check_Content(fd_set &r , fd_set &w)
+{
+    std::cout << Path << std::endl;
+    Path = "www" + Path;
+    std::cout << access(Path.c_str(),F_OK) << std::endl;
+    if (access(Path.c_str(),F_OK) == -1)
+    {
+        std::string message=(char *)"HTTP/1.1 204 \r\nConnection: close\r\nContent-Length: 74";
+        message +="\r\n\r\n<!DOCTYPE html><head><title>No Content</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return 0;
+    }
+    return 1;
+}
+void check_all(std::string str,int *a)
+{
+	struct dirent *d;
+	struct stat s;
+	stat(str.c_str(),&s);
+    if (S_ISDIR(s.st_mode))
+    std::cout << "is dir" << std::endl;
+    if (S_ISDIR(s.st_mode) && (access(str.c_str(), W_OK) == -1 || access(str.c_str(), X_OK) == -1))
+	{
+		*a = 1;
+		return ;
+	}
+	str += "/";
+	DIR *dir = opendir(str.c_str());
+    while(S_ISDIR(s.st_mode) && (d = readdir(dir)) != NULL)
+    {
+        std::string str1 =str+d->d_name;
+        struct stat s1;
+        stat(str1.c_str(),&s1);
+        if (!strcmp(d->d_name,".") || !strcmp(d->d_name,".."));
+        else
+        {
+            if (S_ISDIR(s1.st_mode))
+                check_all((str+d->d_name), a);
+            else if (!S_ISDIR(s1.st_mode))
+                if (access(str1.c_str(), W_OK) == -1)
+                    *a = 1;
+        }
+    }
+    if (dir)
+        closedir(dir);
+ }
+int Response::check_permission(fd_set &r , fd_set &w)
+{
+    int a = 0;
+    struct stat s;
+    if (S_ISDIR(s.st_mode) && (access(Path.c_str(), W_OK) == -1  || access(Path.c_str(), X_OK)))
+        a = 1;
+    else if(!S_ISDIR(s.st_mode) && access(Path.c_str(), W_OK) == -1)
+        a = 1;
+    else 
+        check_all(Path,&a);
+    if (a)
+    {
+        std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73";
+        message +="\r\n\r\n<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return 0;
+    }
+    return 1;
+}
+void delete_file(std::string str)
+{
+    struct dirent *d;
+	struct stat s;
+	stat(str.c_str(),&s);
+	str +="/";
+	DIR *dir = opendir(str.c_str());
+    while(S_ISDIR(s.st_mode) && (d = readdir(dir)) != NULL)
+    {
+        std::string str1 = str+d->d_name;
+        struct stat s1;
+        stat(str1.c_str(),&s1);
+        if (!strcmp(d->d_name,".") || !strcmp(d->d_name,".."));
+        else
+        {
+            if (S_ISDIR(s1.st_mode))
+                delete_file(str+d->d_name);
+            else if (!S_ISDIR(s1.st_mode))
+            {
+                std::string tmp = str1+d->d_name;
+                unlink(((const char *)tmp.c_str()));
+            }
+        }
+    }
+    if(dir)
+        closedir(dir);
+    remove(str.c_str());
+}
+void Response::handler_delete(fd_set &r , fd_set &w)
+{
+    struct stat s;
+  	if (!S_ISDIR(s.st_mode))
+        unlink(((const char *)Path.c_str()));
+    else
+        delete_file(Path);
+    std::string message=(char *)"HTTP/1.1 200\r\nConnection: close\r\nContent-Length: 70";
+    message +="\r\n\r\n<!DOCTYPE html><head><title>200 OK</title></head><body> </body></html>";
+    send(_ClientFD, message.c_str(), message.size(), 0);
+    FD_CLR(_ClientFD, &w);
+    FD_SET(_ClientFD, &r);
+    done = 1;
+}
 int Response::handler(fd_set &r , fd_set &w)
 {
      if (!ok)
@@ -426,7 +539,13 @@ int Response::handler(fd_set &r , fd_set &w)
                                     }
                                 }
                             }
-                         else if(ok || redirect_path(r,w))
+                        else if(delete_space(_request.Getrequest().at("Method")) == "DELETE")
+                        {if(check_Content(r,w))
+                            {if(check_permission(r,w))
+                                    handler_delete(r,w);
+                            }
+                        }
+                        else if(ok || redirect_path(r,w))
                             {if(ok || handle_index() || handle_autoindex(r,w))
                                 send_data(r,w);
                             }

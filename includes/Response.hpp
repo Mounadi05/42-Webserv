@@ -55,6 +55,9 @@ class Response
         int isToo_large(fd_set &r , fd_set &w);
         int last_slash();
         void write_body(fd_set &r , fd_set &w);
+        int check_Content(fd_set &r , fd_set &w);
+        int check_permission(fd_set &r , fd_set &w);
+        void handler_delete(fd_set &r , fd_set &w);
 };
 
 #endif
