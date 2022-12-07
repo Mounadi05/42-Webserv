@@ -26,7 +26,7 @@ class Response
         int post;
         std::string upload;
         int fd_upload;
-        u_int64_t lent_server;
+         u_int64_t lent_server;
      public:
         Response();
         Response(Request request,Server  server, int ClientFD);

@@ -85,6 +85,14 @@ int Response::check_location(fd_set &r , fd_set &w)
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath() + "/") != -1 || Path == _server.getLocations().at(a).getLocationPath())
         {
             root = _server.getLocations().at(a).getRoot();
+            if(_request.Getrequest().at("Method") == "DELETE")
+            {
+                std::string tmp = Path;
+                Path = root + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()),_server.getLocations().at(a).getLocationPath().length(),"");
+                char res[1024];
+                realpath((char *)Path.c_str(),res);
+                full_path = res;
+             }    
             return 1;
         }
     }
@@ -411,10 +419,9 @@ int Response::check_lent(fd_set &r , fd_set &w)
 
 int Response::check_Content(fd_set &r , fd_set &w)
 {
-    std::cout << Path << std::endl;
-    Path = "www" + Path;
-    std::cout << access(Path.c_str(),F_OK) << std::endl;
-    if (access(Path.c_str(),F_OK) == -1)
+    std::cout<< "check content" << full_path <<std::endl;
+    std::cout << access(full_path.c_str(),F_OK) << std::endl;
+    if (access(full_path.c_str(),F_OK) == -1)
     {
         std::string message=(char *)"HTTP/1.1 204 \r\nConnection: close\r\nContent-Length: 74";
         message +="\r\n\r\n<!DOCTYPE html><head><title>No Content</title></head><body> </body></html>";
@@ -462,12 +469,12 @@ int Response::check_permission(fd_set &r , fd_set &w)
 {
     int a = 0;
     struct stat s;
-    if (S_ISDIR(s.st_mode) && (access(Path.c_str(), W_OK) == -1  || access(Path.c_str(), X_OK)))
+    if (S_ISDIR(s.st_mode) && (access(full_path.c_str(), W_OK) == -1  || access(full_path.c_str(), X_OK)))
         a = 1;
-    else if(!S_ISDIR(s.st_mode) && access(Path.c_str(), W_OK) == -1)
+    else if(!S_ISDIR(s.st_mode) && access(full_path.c_str(), W_OK) == -1)
         a = 1;
     else 
-        check_all(Path,&a);
+        check_all(full_path,&a);
     if (a)
     {
         std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73";
@@ -495,13 +502,12 @@ void delete_file(std::string str)
         if (!strcmp(d->d_name,".") || !strcmp(d->d_name,".."));
         else
         {
+            std::cout << "fff" << std::endl;
             if (S_ISDIR(s1.st_mode))
                 delete_file(str+d->d_name);
             else if (!S_ISDIR(s1.st_mode))
-            {
-                std::string tmp = str1+d->d_name;
-                unlink(((const char *)tmp.c_str()));
-            }
+                unlink(((const char *)str1.c_str()));
+
         }
     }
     if(dir)
@@ -511,10 +517,14 @@ void delete_file(std::string str)
 void Response::handler_delete(fd_set &r , fd_set &w)
 {
     struct stat s;
+    stat(full_path.c_str(),&s);
   	if (!S_ISDIR(s.st_mode))
-        unlink(((const char *)Path.c_str()));
+    {
+        std::cout << "is file" << std::endl;
+        unlink(((const char *)full_path.c_str()));
+    }
     else
-        delete_file(Path);
+        delete_file(full_path);
     std::string message=(char *)"HTTP/1.1 200\r\nConnection: close\r\nContent-Length: 70";
     message +="\r\n\r\n<!DOCTYPE html><head><title>200 OK</title></head><body> </body></html>";
     send(_ClientFD, message.c_str(), message.size(), 0);
