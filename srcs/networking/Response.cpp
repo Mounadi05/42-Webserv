@@ -368,8 +368,7 @@ int Response::last_slash()
 
 void Response::write_body(fd_set &r , fd_set &w)
 {
-    std::cout << "post" << std::endl;
-    // char reso[1024];
+     // char reso[1024];
     // char old_reso[1024];
     // realpath(upload.c_str(), reso);
     // realpath(_request.get_tmp().c_str(), old_reso);

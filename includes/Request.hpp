@@ -22,6 +22,8 @@ private:
     u_int64_t full;
     int ok;
     std::string path_tmp;
+    int lent_chunked;
+    int skip;
 public:
     std::string buffer;
     Request();
@@ -52,5 +54,8 @@ public:
     void write_body();
     std::string get_tmp();
     int get_ok();
+    void transfer_chunked();
+    int get_Lchuncked(std::string str);
+    
 };
 #endif

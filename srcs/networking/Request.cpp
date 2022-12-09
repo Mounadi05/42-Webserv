@@ -1,4 +1,5 @@
 #include "../../includes/Webserv.hpp"
+#include <math.h>
 Request::Request()
 {
     _length = 0;
@@ -14,7 +15,8 @@ Request::Request()
     chunked = 0;
     full = 0;
     ok = 0;
-
+    lent_chunked = 0;
+    skip = 0;
 }
 Request::~Request()
 {
@@ -80,7 +82,6 @@ void Request::get_body(char *str)
         a++;
     }
     body_length = a;
-    full += a;
 }
 
 void Request::handel_host_port(void)
@@ -155,6 +156,8 @@ Request &Request::operator=(const Request &req)
         this->size = req.size;
         this->ok = req.ok;
         this->path_tmp = req.path_tmp;
+        this->lent_chunked = req.lent_chunked;
+        this->skip =  req.skip;
     }
     return *this;
 }
@@ -168,11 +171,112 @@ void Request::write_body()
         close(fd);
         finished = 1;
         ok = 0;
-    } 
+        std::cout << "ok" << std::endl;
+    }
+}
+int hex_dec(char *str)
+{
+    std::cout << str << std::endl;
+    int i = 0, val, len;
+    int n = 0;
+  
+    len = strlen(str);
+    len--;
+  
+    while (str[i] != '\0')
+    {
+        if (str[i] >= '0' && str[i] <= '9')
+            val = str[i] - 48;
+        else if (str[i] >= 'a' && str[i] <= 'f') 
+            val = str[i] - 97 + 10;
+        else if (str[i] >= 'A'&& str[i] <= 'F') 
+            val = str[i] - 65 + 10;
+        n += val * pow(16, len);
+        len--;
+        i++;
+    }
+    return n;
+}
+int Request::get_Lchuncked(std::string str)
+{
+    std::string tmp;
+    for(int i = 0 ; i < (int)str.length();i++)
+    {
+        if (str[i] == '\r' && str[i+1] == '\n')
+        {
+            i +=2;
+            skip = 2;
+            while(i < (int)str.length() && str[i] != '\r' && str[i+1] != '\n')
+            {
+                tmp.push_back(str[i++]);
+                skip++;
+            }
+            if(!tmp.empty())
+            {
+                std::cout << "lent : " << hex_dec((char *)tmp.c_str())<< std::endl;
+                skip +=2; 
+                std::cout << "skip : " << skip << std::endl;
+                return hex_dec((char *)tmp.c_str());
+            }
+            else
+                skip = 0;
+        }
+    }
+    return 0;
 }
 
+void Request::transfer_chunked()
+{
+    char u;
+    std::string tmp;
+     if (lent_chunked == 0)
+     {
+        lent_chunked = get_Lchuncked(body);
+        if(lent_chunked == 0)
+        {
+            close(fd);
+            finished = 1;
+            ok = 0;
+        }
+        // else if (lent_chunked < 0 || lent_chunked > 1574821)
+        // {
+        //     std::cout << body << std::endl;
+        // }
+        else
+        {
+            body.erase(0,skip);
+        }
+     }
+    for(int i = 0 ; !finished && i < (int)body.length() && lent_chunked;i++)
+    {
+        if (lent_chunked)
+        {
+            u = body[i];
+            write(fd,&u,1);
+        }
+        lent_chunked--;
+        if (lent_chunked == 0)
+        {
+            lent_chunked = get_Lchuncked(body);
+            if (lent_chunked == 0)
+            {
+                finished = 1;
+                close(fd);
+                ok = 0;
+            }
+             else if (lent_chunked < 0 || lent_chunked > 1574821)
+            {
+                std::cout << body << std::endl;
+            }
+            i += skip;
+        }
+    }     
+
+    //std::cout << hex_dec((char *)tmp.c_str()) << std::endl;
+}
 void Request::handle_request(char *str)
-{    
+{   
+   // std::cout << str << std::endl;
     int index = 0;
     std::string delemiter = "\r\n";
     std::string last = "\r\n\r\n";
@@ -185,7 +289,10 @@ void Request::handle_request(char *str)
         body_length = _length;
         std::string tmp (str,body_length);
         body = tmp;
-         write_body();
+        if(chunked)
+            transfer_chunked();
+        else
+            write_body();
     }
     if (!finished && !ok)
     {
@@ -201,7 +308,9 @@ void Request::handle_request(char *str)
                 if ((int)value.find("Connection",0) != -1)
                     connection = 1;
                 if ((int)value.find("chunked",0) != -1)
-                    chunked = 1;
+                {
+                     chunked = 1;
+                }
                 i = value.find(":", 0);
                 if ((int)value.find("Content-Length") != -1)
                     request.at("Content-Length") = value.substr(i + 1, value.size() - i);
@@ -222,7 +331,13 @@ void Request::handle_request(char *str)
             size = strtoull(request.at("Content-Length").c_str(),NULL, 10);
             ok = 1;
             finished = 0;
-            write_body();
+            if (chunked)
+            {
+                body = delemiter + body;
+                 transfer_chunked();
+             }
+            else
+                write_body();
         }
      }
   }
