@@ -1,15 +1,8 @@
 Listening 4 Port 8000
 Listening 5 Port 8080
 timeout
-timeout
-timeout
 new clinet 6 on server 4
-ch :
-i : 1617
-lent : 2038
--421
-lssek : -1
-hex : 
-ch :
-in
-upload is finished
+new clinet 7 on server 4
+./www/gym-website-template/
+Client disconnected
+timeout

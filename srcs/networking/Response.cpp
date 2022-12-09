@@ -82,9 +82,9 @@ int Response::check_location(fd_set &r , fd_set &w)
 {
     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath() + "/") != -1 || Path == _server.getLocations().at(a).getLocationPath())
+        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1 )
         {
-            root = _server.getLocations().at(a).getRoot();
+             root = _server.getLocations().at(a).getRoot();
             if(_request.Getrequest().at("Method") == "DELETE")
             {
                 std::string tmp = Path;
@@ -130,7 +130,7 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
     Path = delete_space((_request.Getrequest().at("Path")));
     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
-        if (Path == _server.getLocations().at(a).getLocationPath())
+        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
             if (!_server.getLocations().at(a).getRedirection().second.empty())
             {std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
@@ -141,6 +141,8 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
             FD_SET(_ClientFD, &r);
             done = 1;
             return 0;}
+            else
+                return 1;
         }
     }
     return 1;
@@ -174,26 +176,34 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
 
 int Response::handle_index()
 {
-    std::string str = Path.substr(0,Path.find("/",1));
+    int len = 0;
+    std::string str = Path;
     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
-        if (Path == _server.getLocations().at(a).getLocationPath() || Path == (_server.getLocations().at(a).getLocationPath()+"/"))
+        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
-           for(int i = 0; i < (int)_server.getLocations()[a].getIndex().size(); i++)
+            std::string tmp = Path;
+            if (_server.getLocations().at(a).getLocationPath().length() == 1)
+                len = 1;
+            else
+                len = 1 + _server.getLocations().at(a).getLocationPath().length();
+            Path = root + tmp.replace(0,len,"");
+            std::cout << Path << std::endl;
+            char res[1024];
+            realpath((char *)Path.c_str(),res);
+            full_path = res;
+            struct stat s;
+            stat(full_path.c_str(), &s);
+            if ((access((const char *)full_path.c_str(),F_OK) != -1) && !S_ISDIR(s.st_mode))
+                return 1;
+            for(int i = 0; i < (int)_server.getLocations()[a].getIndex().size(); i++)
             {
                 full_path = root + _server.getLocations()[a].getIndex().at(i);
                 if( access((const char *)full_path.c_str(),F_OK) != -1)
                     return 1;
             }
-        }
-    }
-    for(int a = 0;a < (int) _server.getLocations().size(); a++)
-    {
-        if (str == _server.getLocations().at(a).getLocationPath() && Path  != _server.getLocations().at(a).getLocationPath() + "/" && !_server.getLocations()[a].getIndex().empty())
-        {
-            full_path = Path.replace(0,_server.getLocations().at(a).getLocationPath().length(),_server.getLocations().at(a).getRoot());
-            if( access((const char *)full_path.c_str(),F_OK) != -1)
-                return 1;
+            Path = str;
+            return 0;
         }
     }
     return 0;
@@ -292,41 +302,36 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
     //srand(time(0));
     //int n = rand() % 10;
     std::ofstream file;
-    std::string str = Path.substr(0,Path.find("/",1));
-    for(int a = 0;a < (int) _server.getLocations().size(); a++)
+      for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
-        if (Path == _server.getLocations().at(a).getLocationPath() || Path == (_server.getLocations().at(a).getLocationPath()+"/"))
+        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
+            std::cout << "location in auto : " << _server.getLocations().at(a).getLocationPath()<< std::endl;
+            
             if (_server.getLocations().at(a).getAutoIndex() == "on")
             {
+                std::string str = Path.substr(0,Path.find("/",1));
+                std::cout << "str : " << std::endl;
+                struct stat s;
+                 std::string tmp = Path;
+                 Path = root + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()),_server.getLocations().at(a).getLocationPath().length(),"");
+                char res[1024];
+                realpath((char *)Path.c_str(),res);
+                full_path = res;
+                stat(Path.c_str(), &s);
+                std::cout << "hello : " << Path <<std::endl;
+                if ((access((const char *)Path.c_str(),F_OK) != -1) && !S_ISDIR(s.st_mode))
+                    return 1;
                 full_path = "www/autoindex/e.html";
                 file.open(full_path);
                 file.clear();
-                file << generate_autoindex(_server.getLocations().at(a).getRoot());
+                file << generate_autoindex(Path);
                 file.close();
                 return 1;
             }
         }
-    }
-    for(int a = 0;a < (int) _server.getLocations().size(); a++)
-    { 
-        if (str == _server.getLocations().at(a).getLocationPath() && Path  != _server.getLocations().at(a).getLocationPath() + "/")
-        {
-            if (_server.getLocations().at(a).getAutoIndex() == "on")
-            {
-                if (((int) Path.find(".") == -1 && Path[Path.length()-1] == '/'))
-                {
-                    full_path = "www/autoindex/e.html";
-                    file.open(full_path);
-                    file.clear();
-                    file << generate_autoindex(Path.replace(0,_server.getLocations().at(a).getLocationPath().length(),_server.getLocations().at(a).getRoot()));
-                    file.close();
-                }
-                else
-                    full_path = Path.replace(0,_server.getLocations().at(a).getLocationPath().length(),_server.getLocations().at(a).getRoot());
-                return 1;
-            }
-        }
+        else
+            break;
     }
     std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
     message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";

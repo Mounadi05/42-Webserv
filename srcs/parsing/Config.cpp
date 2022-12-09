@@ -400,7 +400,7 @@ std::string getNextToken(std::string &line)
 
 bool compare_location(Location &a,  Location &b)
 {
-    return (a.getLocationPath().length()) < (b.getLocationPath().length());
+    return (a.getLocationPath().length()) > (b.getLocationPath().length());
 }
 
 std::vector<Server> &Config::getServers()
