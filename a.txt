@@ -1,0 +1,1098 @@
+Listening 4 Port 8000
+Listening 5 Port 8080
+new clinet 6 on server 4
+lent : 
+hex 7508 | decimal 29960
+
+
+29960
+skip : 8
+
+hex 7508 | decimal 29960
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+upload is finished
+timeout
+timeout
+timeout
+timeout
+lent : 
+hex ea10 | decimal 59920
+
+
+59920
+skip : 8
+
+hex ea10 | decimal 59920
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex 10000 | decimal 65536
+
+
+65536
+skip : 9
+
+hex 10000 | decimal 65536
+
+
+lent : 
+hex ‚a`]<ï | decimal -1968526678
+
+
+-1968526678
+skip : 12
+
+hex ‚a`]<ï | decimal -1968526678
+
+

@@ -398,7 +398,16 @@ std::string getNextToken(std::string &line)
     return token;
 }
 
+bool compare_location(Location &a,  Location &b)
+{
+    return (a.getLocationPath().length()) < (b.getLocationPath().length());
+}
+
 std::vector<Server> &Config::getServers()
 {
+    for (std::vector<Server >::iterator it = _Servers.begin(); it != _Servers.end(); it++)
+    {
+        std::sort((it)->getLocations().begin(), (it)->getLocations().end(), compare_location);
+    }
     return _Servers;
 }

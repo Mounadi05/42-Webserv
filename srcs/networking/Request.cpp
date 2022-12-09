@@ -176,13 +176,9 @@ void Request::write_body()
 }
 int hex_dec(char *str)
 {
-    std::cout << str << std::endl;
-    int i = 0, val, len;
+     int i = 0, val, len;
     int n = 0;
-  
-    len = strlen(str);
-    len--;
-  
+     len = strlen(str) - 1;
     while (str[i] != '\0')
     {
         if (str[i] >= '0' && str[i] <= '9')
@@ -213,9 +209,7 @@ int Request::get_Lchuncked(std::string str)
             }
             if(!tmp.empty())
             {
-                std::cout << "lent : " << hex_dec((char *)tmp.c_str())<< std::endl;
                 skip +=2; 
-                std::cout << "skip : " << skip << std::endl;
                 return hex_dec((char *)tmp.c_str());
             }
             else
@@ -229,8 +223,9 @@ void Request::transfer_chunked()
 {
     char u;
     std::string tmp;
-     if (lent_chunked == 0)
-     {
+    int a = 0;
+    if (lent_chunked == 0)
+    {
         lent_chunked = get_Lchuncked(body);
         if(lent_chunked == 0)
         {
@@ -238,15 +233,9 @@ void Request::transfer_chunked()
             finished = 1;
             ok = 0;
         }
-        // else if (lent_chunked < 0 || lent_chunked > 1574821)
-        // {
-        //     std::cout << body << std::endl;
-        // }
         else
-        {
             body.erase(0,skip);
-        }
-     }
+    }
     for(int i = 0 ; !finished && i < (int)body.length() && lent_chunked;i++)
     {
         if (lent_chunked)
@@ -257,27 +246,23 @@ void Request::transfer_chunked()
         lent_chunked--;
         if (lent_chunked == 0)
         {
-            lent_chunked = get_Lchuncked(body);
+
+            lent_chunked = get_Lchuncked(body.substr(i));
+            a = body.length() - i;
             if (lent_chunked == 0)
             {
                 finished = 1;
                 close(fd);
                 ok = 0;
-            }
-             else if (lent_chunked < 0 || lent_chunked > 1574821)
-            {
-                std::cout << body << std::endl;
-            }
+             }
             i += skip;
         }
-    }     
-
-    //std::cout << hex_dec((char *)tmp.c_str()) << std::endl;
+    }
+    //std::cout << "send :" << body.length() << std::endl; 
 }
 void Request::handle_request(char *str)
 {   
-   // std::cout << str << std::endl;
-    int index = 0;
+     int index = 0;
     std::string delemiter = "\r\n";
     std::string last = "\r\n\r\n";
     std::string value;

@@ -75,7 +75,7 @@ std::string Response::get_type(std::string path)
     for(int i = 0; i < (int) _server.getmime_types().size(); i++)
         if ((int)_server.getmime_types()[i].find(tmp,0) != -1)
             return _server.getmime_types()[i].substr(0,_server.getmime_types()[i].find("|",0));
-    return path;
+    return "text/plain";
 }
 
 int Response::check_location(fd_set &r , fd_set &w)
@@ -230,7 +230,7 @@ int   Response::redirect_path(fd_set &r , fd_set &w)
 {
     for(int a = 0;a < (int)_server.getLocations().size(); a++)
     {
-        if (Path == _server.getLocations().at(a).getLocationPath() || ((int) Path.find(".") == -1 && Path[Path.length()-1] != '/'))
+        if ((Path == _server.getLocations().at(a).getLocationPath()  && Path != "/") || ((int) Path.find(".") == -1 && Path[Path.length()-1] != '/'))
         {
             std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
             message += Path + "/";

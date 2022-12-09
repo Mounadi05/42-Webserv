@@ -166,8 +166,8 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
             {
                 if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
                 {
-                    char request[1025];
-                    int r = recv(ClientRequest[i].first.getSocketFd(), request, 1023, 0); 
+                    char request[10002];
+                    int r = recv(ClientRequest[i].first.getSocketFd(), request, 10000, 0); 
                     if (r == -1)
                     {
                         std::cout << "Error in recv" << std::endl;
@@ -188,7 +188,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             ClientRequest[i].second = Request();
                         ClientRequest[i].second.setLength(r);
                         ClientRequest[i].second.handle_request(request);
-                        if (ClientRequest[i].second.getFinished() == 1)
+                         if (ClientRequest[i].second.getFinished() == 1)
                         {
                             bool found = 0;
                             Response resp;
