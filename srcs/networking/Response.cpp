@@ -84,8 +84,9 @@ int Response::check_location(fd_set &r, fd_set &w)
     {
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
-
+            red = Path;
             root = _server.getLocations().at(a).getRoot();
+            red.replace(Path.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), root);
             if (_request.Getrequest().at("Method") == "DELETE")
             {
                 std::string tmp = Path;
@@ -232,7 +233,8 @@ int Response::handle_index()
                 return 1;
             for (int i = 0; i < (int)_server.getLocations()[a].getIndex().size(); i++)
             {
-                full_path = root + _server.getLocations()[a].getIndex().at(i);
+                std::cout << full_path << std::endl;
+                full_path += "/" +  _server.getLocations()[a].getIndex().at(i);
                 if (access((const char *)full_path.c_str(), F_OK) != -1)
                     return 1;
             }
@@ -280,9 +282,13 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
 
 int Response::redirect_path(fd_set &r, fd_set &w)
 {
+    char res[1024];
+    struct stat s;
+    realpath((char *)red.c_str(), res);
+    stat(res,&s);
     for (int a = 0; a < (int)_server.getLocations().size(); a++)
     {
-        if ((Path == _server.getLocations().at(a).getLocationPath() && Path != "/") || ((int)Path.find(".") == -1 && Path[Path.length() - 1] != '/'))
+        if ((access(res,F_OK) != -1 && S_ISDIR(s.st_mode)) && ((Path == _server.getLocations().at(a).getLocationPath() && Path != "/") || ((int)Path.find(".") == -1 && Path[Path.length() - 1] != '/')))
         {
             std::cout << YELLOW << "Response 301 Moved Permanently " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
             std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
@@ -373,11 +379,30 @@ int Response::handle_autoindex(fd_set &r, fd_set &w)
                     file.close();
                     return 1;
                 }
+                else if (send_error("404", " Not Found "))
+                {
+                    std::cout << RED << "Response 404 Not Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+                    std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
+                    message += "\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+                    send(_ClientFD, message.c_str(), message.size(), 0);
+                    FD_CLR(_ClientFD, &w);
+                    FD_SET(_ClientFD, &r);
+                    done = 1;
+                }
             }
-            else
-                break;
+            if (send_error("403"," Forbidden "))
+            {
+                std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+                std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
+                message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
+                send(_ClientFD, message.c_str(), message.size(), 0);
+                FD_CLR(_ClientFD, &w);
+                FD_SET(_ClientFD, &r);
+                done = 1;
+            } 
+            
         }
-    }
+    } 
     if (send_error("403"," Forbidden "))
     {
         std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
@@ -390,7 +415,6 @@ int Response::handle_autoindex(fd_set &r, fd_set &w)
     }
     return 0;
 }
-
 int Response::check_upload(fd_set &r, fd_set &w)
 {
     if (!_server.getUploadPath().empty())

@@ -66,6 +66,7 @@ class Response
         std::vector<std::string> _env;
         void load_env(char **env);
         int send_error(std::string error, std::string m);
+        std::string red;
 };
 
 #endif
