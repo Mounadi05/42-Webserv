@@ -84,7 +84,8 @@ int Response::check_location(fd_set &r , fd_set &w)
     {
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1 )
         {
-             root = _server.getLocations().at(a).getRoot();
+           
+            root = _server.getLocations().at(a).getRoot();
             if(_request.Getrequest().at("Method") == "DELETE")
             {
                 std::string tmp = Path;
@@ -102,6 +103,11 @@ int Response::check_location(fd_set &r , fd_set &w)
     FD_CLR(_ClientFD, &w);
     FD_SET(_ClientFD, &r);
     done = 1;
+    if (_request.Getrequest().at("Method") == "POST")
+    {
+        if(access(_request.get_tmp().c_str(),F_OK) != -1)
+            remove(_request.get_tmp().c_str());
+    }
     return 0;
 }
  
@@ -167,6 +173,12 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
             send(_ClientFD,message.c_str(),message.size(),0);
             FD_CLR(_ClientFD,&w);
             FD_SET(_ClientFD,&r);
+            if (_request.Getrequest().at("Method") == "POST")
+            {
+                std::cout << "hello" << std::endl;
+                if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                    remove(_request.get_tmp().c_str());
+            }
             done = 1;
             return 0;
         }
@@ -176,20 +188,14 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
 
 int Response::handle_index()
 {
-    int len = 0;
     std::string str = Path;
     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
             std::string tmp = Path;
-            if (_server.getLocations().at(a).getLocationPath().length() == 1)
-                len = 1;
-            else
-                len = 1 + _server.getLocations().at(a).getLocationPath().length();
-            Path = root + tmp.replace(0,len,"");
-            std::cout << Path << std::endl;
             char res[1024];
+            Path = tmp;
             realpath((char *)Path.c_str(),res);
             full_path = res;
             struct stat s;
@@ -310,14 +316,13 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
             
             if (_server.getLocations().at(a).getAutoIndex() == "on")
             {
-                std::string str = Path.substr(0,Path.find("/",1));
-                std::cout << "str : " << std::endl;
-                struct stat s;
-                 std::string tmp = Path;
-                 Path = root + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()),_server.getLocations().at(a).getLocationPath().length(),"");
+                std::string tmp = Path;
+                tmp.replace(Path.find(_server.getLocations().at(a).getLocationPath()),_server.getLocations().at(a).getLocationPath().length(),root);
                 char res[1024];
+                Path = tmp;
+                struct stat s;
                 realpath((char *)Path.c_str(),res);
-                full_path = res;
+                Path = res;
                 stat(Path.c_str(), &s);
                 std::cout << "hello : " << Path <<std::endl;
                 if ((access((const char *)Path.c_str(),F_OK) != -1) && !S_ISDIR(s.st_mode))
@@ -329,9 +334,10 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
                 file.close();
                 return 1;
             }
+            else
+                break;
         }
-        else
-            break;
+        
     }
     std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
     message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
@@ -355,6 +361,12 @@ int Response::check_upload(fd_set &r , fd_set &w)
     FD_CLR(_ClientFD, &w);
     FD_SET(_ClientFD, &r);
     done = 1;
+    if (_request.Getrequest().at("Method") == "POST")
+    {
+                std::cout << "hello" << std::endl;
+                if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                    remove(_request.get_tmp().c_str());
+    }
     return 0;
 }
 
@@ -401,6 +413,11 @@ int Response::isToo_large(fd_set &r , fd_set &w)
             FD_SET(_ClientFD, &r);
             done = 1;
             return 0;
+            if (_request.Getrequest().at("Method") == "POST")
+            {
+                if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                    remove(_request.get_tmp().c_str());
+            }
         }
     }
     return 1;
@@ -416,6 +433,11 @@ int Response::check_lent(fd_set &r , fd_set &w)
         FD_CLR(_ClientFD, &w);
         FD_SET(_ClientFD, &r);
         done = 1;
+        if (_request.Getrequest().at("Method") == "POST")
+        {
+                if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                    remove(_request.get_tmp().c_str());
+        }
         return 0;
     }
     return 1;
@@ -433,6 +455,11 @@ int Response::check_Content(fd_set &r , fd_set &w)
         FD_CLR(_ClientFD, &w);
         FD_SET(_ClientFD, &r);
         done = 1;
+        if (_request.Getrequest().at("Method") == "POST")
+        {
+                if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                    remove(_request.get_tmp().c_str());
+        }
         return 0;
     }
     return 1;
@@ -506,7 +533,6 @@ void delete_file(std::string str)
         if (!strcmp(d->d_name,".") || !strcmp(d->d_name,".."));
         else
         {
-            std::cout << "fff" << std::endl;
             if (S_ISDIR(s1.st_mode))
                 delete_file(str+d->d_name);
             else if (!S_ISDIR(s1.st_mode))
