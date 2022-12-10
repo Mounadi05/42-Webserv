@@ -11,7 +11,7 @@ class Response
         int _ClientFD;
         Request _request;
         Server _server;
-        char *str;
+        char str[1025];
         int lent;
         int ok;
         int lent_re;

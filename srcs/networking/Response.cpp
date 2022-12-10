@@ -10,7 +10,6 @@ Response::Response(Request  request,Server  server, int ClientFD)
     _request = request;
     _server = server;
     _ClientFD = ClientFD;
-    str = new char[1025];
     lent  = 0;
     ok = 0;
     lent_re = 0;
@@ -199,7 +198,7 @@ int Response::handle_index()
             Path = tmp;
             realpath((char *)Path.c_str(),res);
             full_path = res;
-            struct stat s;
+             struct stat s;
             stat(full_path.c_str(), &s);
             if ((access((const char *)full_path.c_str(),F_OK) != -1) && !S_ISDIR(s.st_mode))
                 return 1;
