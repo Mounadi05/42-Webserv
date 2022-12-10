@@ -18,6 +18,8 @@ class Socket{
         int getSocketFd() const;
         void setSocketFd(int fd);
         void setSockAddr(struct sockaddr_in sockAddr);
+        Socket &operator=(const Socket &rhs);
+        Socket(const Socket &rhs);
 };
 
 #endif

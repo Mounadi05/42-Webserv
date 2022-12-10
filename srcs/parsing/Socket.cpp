@@ -2,11 +2,27 @@
 
 Socket::Socket(){
     _sockaddr = new struct sockaddr_in;
-    std::cout << sizeof(_sockaddr) << std::endl;
+}
+Socket::Socket(const Socket &rhs)
+{
+    if (this != &rhs)
+    {
+        _sockaddr = new struct sockaddr_in;
+        _socket_fd = rhs._socket_fd;
+    }
+}
+
+Socket & Socket::operator=(const Socket &rhs)
+{
+    delete _sockaddr;
+    _sockaddr = new struct sockaddr_in;
+    _socket_fd = rhs._socket_fd;
+    return *this;
 }
 
 Socket::~Socket()
 {
+    delete _sockaddr;
 }
 
 struct sockaddr_in *Socket::getSockAddr() const{

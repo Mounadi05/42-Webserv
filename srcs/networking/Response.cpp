@@ -663,9 +663,11 @@ void Response::cgi_exec()
                 myfile.close();
                 file.close();
             }
-
+            for (size_t i = 0; env[i]; i++)
+                free(env[i]);
+            free(env);
+            
             full_path = "/tmp/cgi_out.html";
-            // std::cout << "cgi done" << std::endl;
         }
     }
 }
