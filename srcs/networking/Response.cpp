@@ -194,6 +194,7 @@ int Response::handle_index()
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
         {
             std::string tmp = Path;
+            tmp.replace(Path.find(_server.getLocations().at(a).getLocationPath()),_server.getLocations().at(a).getLocationPath().length(),root);
             char res[1024];
             Path = tmp;
             realpath((char *)Path.c_str(),res);
