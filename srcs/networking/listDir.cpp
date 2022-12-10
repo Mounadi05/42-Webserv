@@ -98,7 +98,6 @@ t_dir show_dir_content(std::string path)
 
 std::string generate_autoindex(std::string path)
 {
-  std::cout << path << std::endl;
   std::string ret = "";
   if (!path.empty())
   {

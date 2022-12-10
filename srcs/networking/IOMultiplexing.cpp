@@ -9,6 +9,17 @@ IOMultiplexing::IOMultiplexing()
     _fdmax = 0;
 }
 
+std::string trim(std::string &str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
 IOMultiplexing::~IOMultiplexing()
 {
 }
@@ -79,7 +90,7 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
             printError("Listen failed");
             return (-1);
         }
-        std::cout << "Listening " << fd << " Port " << port << std::endl;
+        std::cout << BOLDBLACK << "Server start Listening on Port " << port << RESET << std::endl;
         sock.setSocketFd(fd);
         io.setFdRead(fd);
         io.setFdMax(fd);
@@ -132,15 +143,8 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
         readcpy = io.fdread;
         writecpy = io.fdwrite;
         int r = select(io._fdmax + 1, &readcpy, &writecpy, NULL, &vl);
-        if (r == -1)
-        {
-            std::cout << "Error in select" << std::endl;
-        }
-        else if (r == 0)
-        {
-            std::cout << "timeout" << std::endl;
+        if (r == 0)
             continue;
-        }
         else
         {
             for (size_t j = 0; j < servers.size(); j++)
@@ -149,13 +153,15 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                 if (FD_ISSET(fdserver, &readcpy))
                 {
                     Client newC;
-                    if ((fd_client = accept(fdserver, NULL, NULL)) != -1)
+                    sockaddr_in client_addr;
+                    socklen_t client_addr_size = sizeof(client_addr);
+                    if ((fd_client = accept(fdserver, (sockaddr *)&client_addr,&client_addr_size)) != -1)
                     {
                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
                         newC.setSocketFd(fd_client);
                         newC.setServer(servers[j]);
                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
-                        std::cout << "new clinet " << fd_client << " on server " << fdserver << std::endl;
+                        std::cout << MAGENTA << "New client "<< inet_ntoa(client_addr.sin_addr) << ":" << servers[j].getPort() << " connected" << RESET << std::endl;
                         io.setFdRead(fd_client);
                         if (fd_client > io._fdmax)
                             io._fdmax = fd_client;
@@ -170,14 +176,12 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                     int r = recv(ClientRequest[i].first.getSocketFd(), request, 10000, 0); 
                     if (r == -1)
                     {
-                        std::cout << "Error in recv" << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         close(ClientRequest[i].first.getSocketFd());
                         ClientRequest.erase(ClientRequest.begin() + i);
                     }
                     else if (r == 0)
                     {
-                        std::cout << "Client disconnected" << std::endl;
                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
                         close(ClientRequest[i].first.getSocketFd());
                         ClientRequest.erase(ClientRequest.begin() + i);
@@ -190,6 +194,10 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                         ClientRequest[i].second.handle_request(request);
                          if (ClientRequest[i].second.getFinished() == 1)
                         {
+                            std::cout << BLUE << "Request "<< trim(ClientRequest[i].second.Getrequest()["Method"]) <<
+                            " " << trim(ClientRequest[i].second.Getrequest()["Path"]) << " " <<
+                            trim(ClientRequest[i].second.Getrequest()["Version"]) << RESET << std::endl;
+
                             bool found = 0;
                             Response resp;
                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
@@ -218,7 +226,7 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             }
                             if (!found)
                             {
-                                 resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
                                 ReadyResponse.push_back(resp);
                             }
                         }
