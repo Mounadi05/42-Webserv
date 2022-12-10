@@ -685,20 +685,17 @@ void Response::cgi_exec()
                 NULL};
             unlink("/tmp/cgi_out");
             unlink("/tmp/cgi_out.html");
-            int fd = open("/tmp/cgi_out", O_CREAT | O_RDWR, 0666);
             pid_t pid = fork();
+            int fd;
             if (pid == 0)
             {
-                dup2(open("/Users/ytaya/Desktop/42-Webserv/www/upload/file.php", O_RDONLY), 0);
+                fd = open("/tmp/cgi_out", O_CREAT | O_RDWR, 0666);
                 dup2(fd, 1);
                 execve(*argv, argv, env);
-            }
-            else
-            {
-                int status;
-                waitpid(pid, &status, 0);
                 close(fd);
             }
+            else
+                waitpid(pid, 0, 0);
             std::ifstream file("/tmp/cgi_out");
             if (get_extension(full_path) == "php")
             {
