@@ -223,38 +223,43 @@ void Request::transfer_chunked()
     char u;
     std::string tmp;
     int a = 0;
-    if (lent_chunked == 0)
+    if (lent_chunked > (int)body.length())
+        write(fd,body.c_str(),body.length());
+    else
     {
-        lent_chunked = get_Lchuncked(body);
-        if(lent_chunked == 0)
-        {
-            close(fd);
-            finished = 1;
-            ok = 0;
-        }
-        else
-            body.erase(0,skip);
-    }
-    for(int i = 0 ; !finished && i < (int)body.length() && lent_chunked;i++)
-    {
-        if (lent_chunked)
-        {
-            u = body[i];
-            write(fd,&u,1);
-        }
-        lent_chunked--;
         if (lent_chunked == 0)
         {
-
-            lent_chunked = get_Lchuncked(body.substr(i));
-            a = body.length() - i;
+            lent_chunked = get_Lchuncked(body);
+            if(lent_chunked == 0)
+            {
+                close(fd);
+                finished = 1;
+                ok = 0;
+            }
+            else
+                body.erase(0,skip);
+        }
+        for(int i = 0 ; !finished && i < (int)body.length() && lent_chunked;i++)
+        {
+            if (lent_chunked)
+            {
+                u = body[i];
+                write(fd,&u,1);
+            }
+            lent_chunked--;
             if (lent_chunked == 0)
             {
-                finished = 1;
-                close(fd);
-                ok = 0;
-             }
-            i += skip;
+
+                lent_chunked = get_Lchuncked(body.substr(i));
+                a = body.length() - i;
+                if (lent_chunked == 0)
+                {
+                    finished = 1;
+                    close(fd);
+                    ok = 0;
+                }
+                i += skip;
+            }
         }
     }
     //std::cout << "send :" << body.length() << std::endl; 

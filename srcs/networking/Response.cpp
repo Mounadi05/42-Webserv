@@ -647,7 +647,7 @@ int Response::send_error(std::string error,std::string m)
                 struct stat st;
                 stat(_server.getErrorPages().at(i).second.c_str(), &st);
                 fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
-                std::string message = (char *)"HTTP/1.1" + error + "\r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
+                std::string message = (char *)"HTTP/1.1 " + error + "\r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
                 message += "\r\n\r\n";
                 send(_ClientFD, message.c_str(), message.size(), 0);
                 int len = read(fd_error, str, 10000);
