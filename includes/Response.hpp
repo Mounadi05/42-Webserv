@@ -27,6 +27,9 @@ class Response
         std::string upload;
         int fd_upload;
          u_int64_t lent_server;
+         int fd_error;
+         int error;
+         std::string status_code;
      public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -62,6 +65,7 @@ class Response
         std::map<std::string, std::string> _headers;
         std::vector<std::string> _env;
         void load_env(char **env);
+        int send_error(std::string error);
 };
 
 #endif

@@ -20,6 +20,8 @@ Response::Response(Request  request,Server  server, int ClientFD)
     post = 0;
     fd_upload = 0;
     lent_server = 0;
+    fd_error = 0;
+    error = 0;
 }
 
 Response::~Response()
@@ -79,7 +81,7 @@ std::string Response::get_type(std::string path)
 
 int Response::check_location(fd_set &r , fd_set &w)
 {
-    for(int a = 0;a < (int) _server.getLocations().size(); a++)
+     for(int a = 0;a < (int) _server.getLocations().size(); a++)
     {
         if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1 )
         {
@@ -93,19 +95,22 @@ int Response::check_location(fd_set &r , fd_set &w)
                 realpath((char *)Path.c_str(),res);
                 full_path = res;
              }    
-            return 1;
+             return 1;
         }
     }
-    std::string message=(char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
-    message +="\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
-    send(_ClientFD, message.c_str(), message.size(), 0);
-    FD_CLR(_ClientFD, &w);
-    FD_SET(_ClientFD, &r);
-    done = 1;
     if (_request.Getrequest().at("Method") == "POST")
     {
         if(access(_request.get_tmp().c_str(),F_OK) != -1)
             remove(_request.get_tmp().c_str());
+    }
+    if (send_error("404"))
+    {
+        std::string message=(char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
+        message +="\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
     }
     return 0;
 }
@@ -120,6 +125,27 @@ int Response::is_Valide(fd_set &r , fd_set &w)
     && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" &&Method!= "PROPFIND"&& Method != "VIEW"
     && Version != "HTTP/1.1"&& Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
     {
+        for(int i = 0; i < (int)_server.getErrorPages().size(); i++)
+        {
+            std::cout << _server.getErrorPages().at(i).first << std::endl;
+            if(_server.getErrorPages().at(i).first == "400")
+            {
+                if (access(_server.getErrorPages().at(i).second.c_str(),F_OK) != -1)
+                {
+                    char str[10002];
+                    struct stat st; 
+                    stat(_server.getErrorPages().at(i).second.c_str(),&st);
+                    fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
+                    std::string message=(char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
+                    message +="\r\n\r\n";
+                    send(_ClientFD, message.c_str(), message.size(), 0);
+                    int len = read(fd_error,str,10000);
+                    send(_ClientFD, str, len, 0);
+                    done = 1;
+                    return 0;
+                }
+            }
+        }
         std::string message=(char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n";
         message +="<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
         send(_ClientFD,message.c_str(),message.size(),0);
@@ -167,24 +193,25 @@ int Response::handle_redirection(fd_set &r , fd_set &w)
             for(int i = 0; i < (int)_server.getLocations().at(a).getAllowedMethods().size();i++)
                 if (delete_space(_server.getLocations().at(a).getAllowedMethods().at(i)) == delete_space(_request.Getrequest().at("Method")))
                     return 1;
-            std::string message=(char *)"HTTP/1.1 405 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n";
-            message +="<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
-            send(_ClientFD,message.c_str(),message.size(),0);
-            FD_CLR(_ClientFD,&w);
-            FD_SET(_ClientFD,&r);
             if (_request.Getrequest().at("Method") == "POST")
             {
-                std::cout << "hello" << std::endl;
                 if(access(_request.get_tmp().c_str(),F_OK) != -1)
                     remove(_request.get_tmp().c_str());
             }
-            done = 1;
-            return 0;
+            if(send_error("405"))
+            {
+                std::string message=(char *)"HTTP/1.1 405 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n";
+                message +="<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
+                send(_ClientFD,message.c_str(),message.size(),0);
+                FD_CLR(_ClientFD,&w);
+                FD_SET(_ClientFD,&r);
+                done = 1;
+            }
+            return 0;       
         }
     }
     return 1;
 }
-
 int Response::handle_index()
 {
     std::string str = Path;
@@ -221,22 +248,28 @@ int Response::is_Unauthorize(fd_set &r , fd_set &w)
     std::string Version = _request.Getrequest().at("Version");
     if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
     {
-        std::string message=(char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n";
-        message +="<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
-        send(_ClientFD,message.c_str(),message.size(),0);
-        FD_CLR(_ClientFD,&w);
-        FD_SET(_ClientFD,&r);
-        done = 1;
+        if (send_error("501"))
+        {
+            std::string message=(char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n";
+            message +="<!DOCTYPE html><head><title>Not Implemented</title></head><body> </body></html>";
+            send(_ClientFD,message.c_str(),message.size(),0);
+            FD_CLR(_ClientFD,&w);
+            FD_SET(_ClientFD,&r);
+            done = 1;
+        }
         return 0;
     }
     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
     {
-        std::string message=(char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n";
-        message +="<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
-        send(_ClientFD,message.c_str(),message.size(),0);
-        FD_CLR(_ClientFD,&w);
-        FD_SET(_ClientFD,&r);
-        done = 1;
+        if(send_error("505"))
+        {
+            std::string message=(char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n";
+            message +="<!DOCTYPE html><head><title>HTTP Version Not Supported</title></head><body> </body></html>";
+            send(_ClientFD,message.c_str(),message.size(),0);
+            FD_CLR(_ClientFD,&w);
+            FD_SET(_ClientFD,&r);
+            done = 1;
+        }
         return 0;
     }
     return 1;
@@ -287,8 +320,6 @@ void Response::send_data(fd_set &r , fd_set &w)
             FD_CLR(_ClientFD,&w);
             FD_SET(_ClientFD,&r);
             done = 1;
-         //  if ((int)full_path.find("www/autoindex/") != -1)
-          //      remove(full_path.c_str());
             close(fd);
         }
         else if (lent_re >= size)
@@ -297,9 +328,7 @@ void Response::send_data(fd_set &r , fd_set &w)
             FD_SET(_ClientFD,&r);
             close(fd);
             lent_re = 0;
-            done = 1;
-           // if ((int)full_path.find("www/autoindex/") != -1)
-             //   remove(full_path.c_str());
+            done = 1;;
         }
     }
 }
@@ -330,24 +359,29 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
                     full_path = Path;
                     return 1;
                 }
-                full_path = "www/autoindex/e.html";
-                file.open(full_path);
-                file.clear();
-                file << generate_autoindex(Path);
-                file.close();
-                return 1;
+                if(S_ISDIR(s.st_mode))
+                {
+                    full_path = "www/autoindex/e.html";
+                    file.open(full_path);
+                    file.clear();
+                    file << generate_autoindex(Path);
+                    file.close();
+                    return 1;
+                }
             }
             else
                 break;
         }
-        
     }
-    std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
-    message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
-    send(_ClientFD,message.c_str(),message.size(),0);
-    FD_CLR(_ClientFD,&w);
-    FD_SET(_ClientFD,&r);
-    done = 1;
+    if(send_error("403"))
+    {
+        std::string message=(char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
+        message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
+        send(_ClientFD,message.c_str(),message.size(),0);
+        FD_CLR(_ClientFD,&w);
+        FD_SET(_ClientFD,&r);
+        done = 1;
+    }
     return 0;
 }
 
@@ -366,9 +400,8 @@ int Response::check_upload(fd_set &r , fd_set &w)
     done = 1;
     if (_request.Getrequest().at("Method") == "POST")
     {
-                std::cout << "hello" << std::endl;
-                if(access(_request.get_tmp().c_str(),F_OK) != -1)
-                    remove(_request.get_tmp().c_str());
+        if(access(_request.get_tmp().c_str(),F_OK) != -1)
+            remove(_request.get_tmp().c_str());
     }
     return 0;
 }
@@ -409,18 +442,22 @@ int Response::isToo_large(fd_set &r , fd_set &w)
     {
          if(_request.GetLent() > lent_server)
         {
-            std::string message=(char *)"HTTP/1.1 413 \r\nConnection: close\r\nContent-Length: 81";
-            message +="\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
-            send(_ClientFD, message.c_str(), message.size(), 0);
-            FD_CLR(_ClientFD, &w);
-            FD_SET(_ClientFD, &r);
-            done = 1;
-            return 0;
             if (_request.Getrequest().at("Method") == "POST")
             {
                 if(access(_request.get_tmp().c_str(),F_OK) != -1)
                     remove(_request.get_tmp().c_str());
             }
+            if(send_error("413"))
+            {
+                std::string message=(char *)"HTTP/1.1 413 \r\nConnection: close\r\nContent-Length: 81";
+                message +="\r\n\r\n<!DOCTYPE html><head><title>Payload Too Large</title></head><body> </body></html>";
+                send(_ClientFD, message.c_str(), message.size(), 0);
+                FD_CLR(_ClientFD, &w);
+                FD_SET(_ClientFD, &r);
+                done = 1;
+            }
+            return 0;
+           
         }
     }
     return 1;
@@ -430,17 +467,20 @@ int Response::check_lent(fd_set &r , fd_set &w)
 {
     if (_request.check_chunked() == 0 && _request.Getrequest().at("Content-Length").empty())
     {
-        std::string message=(char *)"HTTP/1.1 411 \r\nConnection: close\r\nContent-Length: 79";
-        message +="\r\n\r\n<!DOCTYPE html><head><title>Length Required</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
         if (_request.Getrequest().at("Method") == "POST")
         {
-                if(access(_request.get_tmp().c_str(),F_OK) != -1)
-                    remove(_request.get_tmp().c_str());
+            if(access(_request.get_tmp().c_str(),F_OK) != -1)
+                remove(_request.get_tmp().c_str());
         }
+        if(send_error("411"))
+        {
+            std::string message=(char *)"HTTP/1.1 411 \r\nConnection: close\r\nContent-Length: 79";
+            message +="\r\n\r\n<!DOCTYPE html><head><title>Length Required</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+        }        
         return 0;
     }
     return 1;
@@ -589,6 +629,31 @@ void Response::load_env(char **env)
     _env.clear();
     for (size_t i = 0; env[i]; i++)
         _env.push_back(env[i]);
+}
+int Response::send_error(std::string error)
+{
+    for(int i = 0; i < (int)_server.getErrorPages().size(); i++)
+    {
+        std::cout << _server.getErrorPages().at(i).first << std::endl;
+        if(_server.getErrorPages().at(i).first == error)
+        {
+            if (access(_server.getErrorPages().at(i).second.c_str(),F_OK) != -1)
+            {
+                char str[10002];
+                struct stat st; 
+                stat(_server.getErrorPages().at(i).second.c_str(),&st);
+                fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
+                std::string message=(char *)"HTTP/1.1" + error + "\r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
+                message +="\r\n\r\n";
+                send(_ClientFD, message.c_str(), message.size(), 0);
+                int len = read(fd_error,str,10000);
+                send(_ClientFD, str, len, 0);
+                done = 1;
+                return 0;
+            }
+        }
+    }
+    return 1;
 }
 
 char **create_env(std::vector<std::string> _env)
