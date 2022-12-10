@@ -223,6 +223,7 @@ void Request::transfer_chunked()
     char u;
     std::string tmp;
     int a = 0;
+    (void) a;
     if (lent_chunked > (int)body.length())
     {
         write(fd,body.c_str(),body.length());
