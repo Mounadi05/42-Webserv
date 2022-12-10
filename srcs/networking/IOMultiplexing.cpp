@@ -206,18 +206,22 @@ void EventLoop(std::vector<Server> &servers, IOMultiplexing &io)
                             {
                                 for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
                                 {
-                                    if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host"))
-                                    && std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
+                                    if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host")))
                                     {
                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
                                         ReadyResponse.push_back(resp);
                                         found = 1;
                                         break;
                                     }
-                                    else if (std::to_string(servers[j].getPort()) == strtrim(ClientRequest[i].second.Getrequest().at("Port")))
+                                }
+                            }
+                            if (!found)
+                            {
+                                for (size_t j = 0; j < servers.size(); j++)
+                                {
+                                    if (!servers[j].getServerNames().size() && servers[j].getPort() == ClientRequest[i].first.getServer().getPort())
                                     {
-                                      
-                                        resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+                                        resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
                                         ReadyResponse.push_back(resp);
                                         found = 1;
                                         break;
