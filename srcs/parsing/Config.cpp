@@ -194,7 +194,7 @@ int valide_error_code(std::string error_code)
 {
     if (is_number(error_code))
     {
-        if (stoi(error_code) < 200)
+        if (stoi(error_code) != 404 && stoi(error_code) != 403 && stoi(error_code) != 405)
             printError("not valid code");
     }
     else
@@ -325,7 +325,7 @@ void Config::handel_location(std::string &line, Server &server)
                     printError("return code is empty");
                 else
                 {
-                    if (valide_error_code(code))
+                    if (code == "302")
                     {
                         std::string url = getNextToken(line);
                         if (url == "")
@@ -333,6 +333,8 @@ void Config::handel_location(std::string &line, Server &server)
                         else
                             location.setRedirection(std::pair<std::string,std::string>(code, url));
                     }
+                    else
+                        printError("return code is not valid");
                 }
             }
             else

@@ -1,1 +1,1 @@
-cat /Users/ytaya/Desktop/42-Webserv/www/gym-website-template/index.html
+echo "Hello from bash"

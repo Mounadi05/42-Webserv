@@ -4,6 +4,19 @@ Response::Response()
 {
 }
 
+std::string ft_toString(long long n)
+{
+    std::string str;
+    if (n == 0)
+        return "0";
+    while (n != 0)
+    {
+        str.insert(str.begin(), n % 10 + '0');
+        n /= 10;
+    }
+    return str;
+}
+
 Response::Response(Request request, Server server, int ClientFD)
 {
     _request = request;
@@ -133,7 +146,7 @@ int Response::is_Valide(fd_set &r, fd_set &w)
                     struct stat st;
                     stat(_server.getErrorPages().at(i).second.c_str(), &st);
                     fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
-                    std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
+                    std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: " + ft_toString(st.st_size);
                     message += "\r\n\r\n";
                     send(_ClientFD, message.c_str(), message.size(), 0);
                     int len = read(fd_error, str, 10000);
@@ -233,7 +246,6 @@ int Response::handle_index()
                 return 1;
             for (int i = 0; i < (int)_server.getLocations()[a].getIndex().size(); i++)
             {
-                std::cout << full_path << std::endl;
                 full_path += "/" +  _server.getLocations()[a].getIndex().at(i);
                 if (access((const char *)full_path.c_str(), F_OK) != -1)
                     return 1;
@@ -318,7 +330,7 @@ void Response::send_data(fd_set &r, fd_set &w)
             bzero(str, 1025);
             std::string header;
             std::cout << GREEN << "Response 200 OK " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-            header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: ";
+            header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + ft_toString(size) + "\r\nContent-type: ";
             header += delete_space(get_type(full_path)) + ((_headers["Set-Cookie"] == "") ? "" : ("\r\nSet-Cookie: " + _headers["Set-Cookie"])) + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
             write(_ClientFD, header.c_str(), header.size());
             ok = 10;
@@ -673,7 +685,7 @@ int Response::send_error(std::string error,std::string m)
                 struct stat st;
                 stat(_server.getErrorPages().at(i).second.c_str(), &st);
                 fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
-                std::string message = (char *)"HTTP/1.1 " + error + "\r\nConnection: close\r\nContent-Length: " + std::to_string(st.st_size);
+                std::string message = (char *)"HTTP/1.1 " + error + "\r\nConnection: close\r\nContent-Length: " + ft_toString(st.st_size);
                 message += "\r\n\r\n";
                 send(_ClientFD, message.c_str(), message.size(), 0);
                 int len = read(fd_error, str, 10000);

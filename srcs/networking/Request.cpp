@@ -266,7 +266,6 @@ void Request::transfer_chunked()
             }
         }
     }
-    //std::cout << "send :" << body.length() << std::endl; 
 }
 void Request::handle_request(char *str)
 {   

@@ -71,7 +71,6 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
             return (-1);
         }
         io.AlreadyBind.push_back(std::pair<int, int>(fd, port));
-        // std::cout << "Socket created " << fd << std::endl;
         int val = 1;
         if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1)
         {
@@ -84,7 +83,6 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
             printError("Bind failed");
             return (-1);
         }
-        // std::cout << "Binded " << port << std::endl;
         if (listen(fd, SOMAXCONN) == -1)
         {
             printError("Listen failed");
