@@ -1,0 +1,1 @@
+print("<!DOCTYPE html><html><body><h1>My first python page</h1>Hello World!</body></html>")

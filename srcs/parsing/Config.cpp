@@ -1,5 +1,9 @@
 #include "../../includes/Webserv.hpp"
 
+void Config::setEnv(char **env){
+    _env = env;
+}
+
 Config::Config()
 {
 }
@@ -52,6 +56,7 @@ void Config::parse()
             else if (token == "server")
             {
                 Server server;
+                server._env = this->_env;
                 _Servers.push_back(server);
                 n_server++;
             }
@@ -398,16 +403,7 @@ std::string getNextToken(std::string &line)
     return token;
 }
 
-bool compare_location(Location &a,  Location &b)
-{
-    return (a.getLocationPath().length()) > (b.getLocationPath().length());
-}
-
 std::vector<Server> &Config::getServers()
 {
-    for (std::vector<Server >::iterator it = _Servers.begin(); it != _Servers.end(); it++)
-    {
-        std::sort((it)->getLocations().begin(), (it)->getLocations().end(), compare_location);
-    }
     return _Servers;
 }

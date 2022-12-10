@@ -58,6 +58,10 @@ class Response
         int check_Content(fd_set &r , fd_set &w);
         int check_permission(fd_set &r , fd_set &w);
         void handler_delete(fd_set &r , fd_set &w);
+        void cgi_exec();
+        std::map<std::string, std::string> _headers;
+        std::vector<std::string> _env;
+        void load_env(char **env);
 };
 
 #endif

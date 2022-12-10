@@ -3,7 +3,7 @@
 #include "includes/Webserv.hpp"
 #include <math.h>
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **env)
 {
     Config conf;
     IOMultiplexing io;
@@ -15,9 +15,14 @@ int main(int argc, char **argv)
     else if (argc == 1)
     {
         conf.SetConfigFile("./config.d/default.conf");
+        conf.setEnv(env);
         io.SetupServers(conf);
     }
     else
+    {
         conf.SetConfigFile(argv[1]);
+        conf.setEnv(env);
+        io.SetupServers(conf);
+    }
     return 0;
 }

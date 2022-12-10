@@ -14,7 +14,6 @@ private:
     std::vector<std::pair<std::string, std::string> > _error_pages;
     std::string _uploadPath;
     std::vector<std::string> mime_types;
-    std::pair<std::string,std::string> _cgi;
 public:
     Server();
     ~Server();
@@ -27,6 +26,8 @@ public:
     std::vector<std::pair<std::string, std::string> > &getErrorPages();
     std::string &getUploadPath();
     std::vector<std::string> &getmime_types(void);
+    std::vector<std::pair<std::string,std::string> > _cgi;
+    char **_env;
     int a;
 
 

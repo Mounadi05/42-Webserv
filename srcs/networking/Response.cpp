@@ -263,6 +263,7 @@ int   Response::redirect_path(fd_set &r , fd_set &w)
 
 void Response::send_data(fd_set &r , fd_set &w)
 {
+    cgi_exec();
     struct stat st;
     if (access((const char *)full_path.c_str(),F_OK) != -1)
     {
@@ -273,8 +274,8 @@ void Response::send_data(fd_set &r , fd_set &w)
             fd = open(full_path.c_str(), O_RDONLY);
             bzero(str, 1025);
             std::string header;
-            header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: "; 
-            header += delete_space(get_type(full_path)) + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
+            header = (char *)"HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(size) + "\r\nContent-type: ";
+            header += delete_space(get_type(full_path)) + ((_headers["Set-Cookie"] == "") ? "" : ("\r\nSet-Cookie: " + _headers["Set-Cookie"])) + "\r\nConnection: " + delete_space(_request.Getrequest().at("Connection")) + "\r\n\r\n";
             write(_ClientFD, header.c_str(), header.size());
             ok = 10;
         }
@@ -324,9 +325,11 @@ int Response::handle_autoindex(fd_set &r , fd_set &w)
                 realpath((char *)Path.c_str(),res);
                 Path = res;
                 stat(Path.c_str(), &s);
-                std::cout << "hello : " << Path <<std::endl;
                 if ((access((const char *)Path.c_str(),F_OK) != -1) && !S_ISDIR(s.st_mode))
+                {
+                    full_path = Path;
                     return 1;
+                }
                 full_path = "www/autoindex/e.html";
                 file.open(full_path);
                 file.clear();
@@ -562,6 +565,111 @@ void Response::handler_delete(fd_set &r , fd_set &w)
     FD_SET(_ClientFD, &r);
     done = 1;
 }
+
+std::string to_upper(std::string str)
+{
+    std::string str1;
+    for (size_t i = 0; i < str.size(); i++)
+        str1 += toupper(str[i]);
+    return str1;
+}
+
+std::string stringtrim(std::string str)
+{
+    std::string str1;
+    for (size_t i = 0; i < str.size(); i++)
+        if (str[i] != ' ')
+            str1 += str[i];
+    return str1;
+}
+
+void Response::load_env(char **env)
+{
+    std::string str;
+    _env.clear();
+    for (size_t i = 0; env[i]; i++)
+        _env.push_back(env[i]);
+}
+
+char **create_env(std::vector<std::string> _env)
+{
+    char **env = new char *[_env.size() + 1];
+    for (size_t i = 0; i < _env.size(); i++)
+        env[i] = strdup(_env[i].c_str());
+    env[_env.size()] = NULL;
+    return env;
+}
+
+void Response::cgi_exec()
+{
+    for (size_t i = 0; i < _server._cgi.size(); i++)
+    {
+        if ((int)_server._cgi[i].second.find(get_extension(full_path)) != -1)
+        {
+            load_env(_server._env);
+            for (std::map<std::string, std::string>::iterator it = _request.Getrequest().begin(); it != _request.Getrequest().end(); it++)
+                _env.push_back("HTTP_" + to_upper(it->first) + "=" + stringtrim(it->second));
+            char **env = create_env(_env);
+            char *argv[] = {
+                (char *)_server._cgi[i].first.c_str(),
+                (char *)full_path.c_str(),
+                NULL};
+            unlink("/tmp/cgi_out");
+            unlink("/tmp/cgi_out.html");
+            int fd = open("/tmp/cgi_out", O_CREAT | O_RDWR, 0666);
+            pid_t pid = fork();
+            if (pid == 0)
+            {
+                dup2(open("/Users/ytaya/Desktop/42-Webserv/www/upload/file.php",O_RDONLY), 0);
+                dup2(fd, 1);
+                execve(*argv, argv, env);
+            }
+            else
+            {
+                int status;
+                waitpid(pid, &status, 0);
+                close(fd);
+            }
+            std::ifstream file("/tmp/cgi_out");
+            if (get_extension(full_path) == "php")
+            {
+                if (file.is_open())
+                {
+                    std::string line;
+                    while (getline(file, line))
+                    {
+                        std::string key = line.substr(0, line.find(":"));
+                        std::string value = line.substr(line.find(":") + 1, line.length());
+                        _headers.insert(std::pair<std::string, std::string>(key, value));
+                        if (line.length() == 1 && (int)line.find("\r") != -1)
+                            break;
+                    }
+                }
+                if (file.eof())
+                    file.close();
+            }
+            std::ofstream myfile("/tmp/cgi_out.html");
+            if (myfile.is_open())
+            {
+                if (!file.is_open())
+                    file.open("/tmp/cgi_out");
+                std::string line;
+                while (getline(file, line))
+                {
+                    if (line.length() == 1 && (int)line.find("\r") != -1)
+                        break;
+                    myfile << line;
+                }
+                myfile.close();
+                file.close();
+            }
+
+            full_path = "/tmp/cgi_out.html";
+            // std::cout << "cgi done" << std::endl;
+        }
+    }
+}
+
 int Response::handler(fd_set &r , fd_set &w)
 {
      if (!ok)

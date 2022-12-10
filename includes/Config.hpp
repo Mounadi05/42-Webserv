@@ -24,9 +24,9 @@ class Config{
     void hadel_listen(std::string &line, Server &server);
     void print_servers();
     std::vector<Server> & getServers();
- 
     std::string getFilePath() const;
-
+    char **_env;
+    void setEnv(char **env);
 };
 
 bool valide_host(std::string &host);
