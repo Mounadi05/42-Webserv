@@ -65,7 +65,7 @@ class Response
         std::map<std::string, std::string> _headers;
         std::vector<std::string> _env;
         void load_env(char **env);
-        int send_error(std::string error);
+        int send_error(std::string error, std::string m);
 };
 
 #endif

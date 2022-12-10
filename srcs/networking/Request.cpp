@@ -171,7 +171,6 @@ void Request::write_body()
         close(fd);
         finished = 1;
         ok = 0;
-        std::cout << "ok" << std::endl;
     }
 }
 int hex_dec(char *str)

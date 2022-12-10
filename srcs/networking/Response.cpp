@@ -102,7 +102,7 @@ int Response::check_location(fd_set &r, fd_set &w)
         if (access(_request.get_tmp().c_str(), F_OK) != -1)
             remove(_request.get_tmp().c_str());
     }
-    if (send_error("404"))
+    if (send_error("404", " Not Found "))
     {
         std::cout << RED << "Response 404 Not Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
         std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
@@ -198,7 +198,7 @@ int Response::handle_method(fd_set &r, fd_set &w)
                 if (access(_request.get_tmp().c_str(), F_OK) != -1)
                     remove(_request.get_tmp().c_str());
             }
-            if (send_error("405"))
+            if (send_error("405"," Method Not Allowed "))
             {
                 std::cout << RED << "Response 405 Method Not Allowed " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
                 std::string message = (char *)"HTTP/1.1 405 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n";
@@ -249,7 +249,7 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     std::string Version = _request.Getrequest().at("Version");
     if ((Method != "GET" && Method != "POST" && Method != "DELETE"))
     {
-        if (send_error("501"))
+        if (send_error("501"," Method Not Implemented "))
         {
             std::cout << RED << "Response 501 Method Not Implemented " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
             std::string message = (char *)"HTTP/1.1 501 \r\nConnection: close\r\nContent-Length: 79\r\n\r\n";
@@ -263,7 +263,7 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
     }
     if ((Version != "HTTP/1.1" && Version != "HTTP/1.0"))
     {
-        if (send_error("505"))
+        if (send_error("505", "HTTP Version Not Supported"))
         {
             std::cout << RED << "Response 505 HTTP Version Not Supported " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
             std::string message = (char *)"HTTP/1.1 505 \r\nConnection: close\r\nContent-Length: 90\r\n\r\n";
@@ -378,7 +378,7 @@ int Response::handle_autoindex(fd_set &r, fd_set &w)
                 break;
         }
     }
-    if (send_error("403"))
+    if (send_error("403"," Forbidden "))
     {
         std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
         std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
@@ -454,7 +454,7 @@ int Response::isToo_large(fd_set &r, fd_set &w)
                 if (access(_request.get_tmp().c_str(), F_OK) != -1)
                     remove(_request.get_tmp().c_str());
             }
-            if (send_error("413"))
+            if (send_error("413"," Payload Too Large "))
             {
                 std::cout << RED << "Response 413 Payload Too Large " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
                 std::string message = (char *)"HTTP/1.1 413 \r\nConnection: close\r\nContent-Length: 81";
@@ -479,7 +479,7 @@ int Response::check_lent(fd_set &r, fd_set &w)
             if (access(_request.get_tmp().c_str(), F_OK) != -1)
                 remove(_request.get_tmp().c_str());
         }
-        if (send_error("411"))
+        if (send_error("411"," Length Required "))
         {
             std::cout << RED << "Response 411 Length Required " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
             std::string message = (char *)"HTTP/1.1 411 \r\nConnection: close\r\nContent-Length: 79";
@@ -531,8 +531,7 @@ void check_all(std::string str, int *a)
         std::string str1 = str + d->d_name;
         struct stat s1;
         stat(str1.c_str(), &s1);
-        if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
-            ;
+        if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."));
         else
         {
             if (S_ISDIR(s1.st_mode))
@@ -580,8 +579,7 @@ void delete_file(std::string str)
         std::string str1 = str + d->d_name;
         struct stat s1;
         stat(str1.c_str(), &s1);
-        if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
-            ;
+        if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."));
         else
         {
             if (S_ISDIR(s1.st_mode))
@@ -635,7 +633,7 @@ void Response::load_env(char **env)
     for (size_t i = 0; env[i]; i++)
         _env.push_back(env[i]);
 }
-int Response::send_error(std::string error)
+int Response::send_error(std::string error,std::string m)
 {
     for (int i = 0; i < (int)_server.getErrorPages().size(); i++)
     {
@@ -643,7 +641,8 @@ int Response::send_error(std::string error)
         {
             if (access(_server.getErrorPages().at(i).second.c_str(), F_OK) != -1)
             {
-                std::cout << RED << "Response " << _server.getErrorPages().at(i).first << " Not Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+                std::string messge;
+                std::cout << RED << "Response " << _server.getErrorPages().at(i).first << m << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
                 char str[10002];
                 struct stat st;
                 stat(_server.getErrorPages().at(i).second.c_str(), &st);
