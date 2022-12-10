@@ -592,6 +592,7 @@ void delete_file(std::string str)
         closedir(dir);
     remove(str.c_str());
 }
+
 void Response::handler_delete(fd_set &r, fd_set &w)
 {
     struct stat s;
@@ -633,6 +634,7 @@ void Response::load_env(char **env)
     for (size_t i = 0; env[i]; i++)
         _env.push_back(env[i]);
 }
+
 int Response::send_error(std::string error,std::string m)
 {
     for (int i = 0; i < (int)_server.getErrorPages().size(); i++)
