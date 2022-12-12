@@ -402,7 +402,7 @@ int Response::handle_autoindex(fd_set &r, fd_set &w)
                     done = 1;
                 }
             }
-            if (send_error("403"," Forbidden "))
+            else if (send_error("403"," Forbidden "))
             {
                 std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
                 std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
@@ -411,20 +411,9 @@ int Response::handle_autoindex(fd_set &r, fd_set &w)
                 FD_CLR(_ClientFD, &w);
                 FD_SET(_ClientFD, &r);
                 done = 1;
-            } 
-            
+            }
         }
     } 
-    if (send_error("403"," Forbidden "))
-    {
-        std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-        std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
-        message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
-        send(_ClientFD, message.c_str(), message.size(), 0);
-        FD_CLR(_ClientFD, &w);
-        FD_SET(_ClientFD, &r);
-        done = 1;
-    }
     return 0;
 }
 int Response::check_upload(fd_set &r, fd_set &w)
