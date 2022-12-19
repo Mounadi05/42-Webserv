@@ -16,7 +16,7 @@ Config::~Config()
 void Config::SetConfigFile(std::string Path)
 {
     this->_FilePath = Path;
-    this->_Configfile.open(_FilePath);
+    this->_Configfile.open(_FilePath.c_str());
 
     if (_Configfile.is_open())
     {
@@ -185,7 +185,7 @@ void Config::hadel_listen(std::string &line, Server &server)
 int is_number(std::string buf)
 {
     for (size_t i = 0; i < buf.length(); i++)
-        if (!isnumber(buf[i]))
+        if (buf[i] < '0' || buf[i] > '9')
             return 0;
     return (1);
 }
@@ -407,7 +407,7 @@ std::string getNextToken(std::string &line)
 
 bool compare_location(Location &a,  Location &b)
 {
-    return (a.getLocationPath().length()) > (b.getLocationPath().length());
+    return (a.getLocationPath().length()) < (b.getLocationPath().length());
 }
 
 std::vector<Server> &Config::getServers()

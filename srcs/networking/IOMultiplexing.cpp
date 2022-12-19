@@ -92,7 +92,7 @@ int CreateSocket(Socket &sock, int port, IOMultiplexing &io)
         sock.setSocketFd(fd);
         io.setFdRead(fd);
         io.setFdMax(fd);
-        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
+     //   setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
         return (fd);
     }
     else

@@ -7,6 +7,7 @@ int main(int argc, char **argv, char **env)
 {
     Config conf;
     IOMultiplexing io;
+    signal(SIGPIPE, SIG_IGN);
     if (argc != 1 && argc != 2)
     {
         std::cout << "Usage :  ./webserv [Config file path]" << std::endl;

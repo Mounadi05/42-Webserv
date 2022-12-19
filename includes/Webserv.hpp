@@ -22,7 +22,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-
+#include <algorithm>
+#include <cstring>
+#include <sys/wait.h>
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */
 #define RED     "\033[31m"      /* Red */

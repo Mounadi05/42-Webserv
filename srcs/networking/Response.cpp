@@ -91,24 +91,69 @@ std::string Response::get_type(std::string path)
     return "text/plain";
 }
 
+
+int comp(const char *str, const char *path)
+{
+    int i = 0;
+    while(str[i] && path[i])
+    {
+        if (str[i] == path[i])
+            i++;
+        else
+            break;
+    }
+    if ((!path[i] && !str[i]) || ( !str[i] && path[i] == '/'))
+        return 1;
+    return 0;
+}
+
 int Response::check_location(fd_set &r, fd_set &w)
 {
+    int flag = 0;
     for (int a = 0; a < (int)_server.getLocations().size(); a++)
     {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
+        if (comp(_server.getLocations().at(a).getLocationPath().c_str(),Path.c_str()))
         {
-            red = Path;
-            root = _server.getLocations().at(a).getRoot();
-            red.replace(Path.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), root);
+            flag = 1;
+            locations = _server.getLocations().at(a);
+            std::string tmp = Path;
+            full_path = locations.getRoot() + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), "");
+            char str[1025];
+            realpath(full_path.c_str(),str);
+            full_path = str;
             if (_request.Getrequest().at("Method") == "DELETE")
             {
                 std::string tmp = Path;
-                Path = root + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), "");
+                Path = locations.getRoot() + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), "");
                 char res[1024];
                 realpath((char *)Path.c_str(), res);
                 full_path = res;
             }
             return 1;
+        }
+    }
+    if(!flag)
+    {
+        for (int a = 0; a < (int)_server.getLocations().size(); a++)
+        {
+            if (_server.getLocations().at(a).getLocationPath() == "/")
+            {
+                locations = _server.getLocations().at(a);
+                std::string tmp = Path;
+                full_path = locations.getRoot() + tmp.replace(tmp.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), "");
+                char str[1025];
+                realpath(full_path.c_str(),str);
+                full_path = str;
+                if (_request.Getrequest().at("Method") == "DELETE")
+                {
+                    std::string tmp = Path;
+                    Path = locations.getRoot() + tmp.replace(tmp.find(_server.getLocations().at(0).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), "");
+                    char res[1024];
+                    realpath((char *)Path.c_str(), res);
+                    full_path = res;
+                }
+                return 1;
+            }
         }
     }
     if (_request.Getrequest().at("Method") == "POST")
@@ -136,29 +181,29 @@ int Response::is_Valide(fd_set &r, fd_set &w)
     std::string Version = _request.Getrequest().at("Version");
     if (Method != "GET" && Method != "POST" && Method != "PUT" && Method != "PATCH" && Method != "DELETE" && Method != "COPY" && Method != "HEAD" && Method != "OPTIONS" && Method != "LINK" && Method != "UNLINK" && Method != "PURGE" && Method != "LOCK" && Method != "UNLOCK" && Method != "PROPFIND" && Method != "VIEW" && Version != "HTTP/1.1" && Version != "HTTP/1.0" && Version != "HTTP/2.0" && Version != "HTTP/3.0")
     {
-        for (int i = 0; i < (int)_server.getErrorPages().size(); i++)
+        if(send_error("400"," Bad Request "))
         {
-            if (_server.getErrorPages().at(i).first == "400")
-            {
-                if (access(_server.getErrorPages().at(i).second.c_str(), F_OK) != -1)
-                {
-                    char str[10002];
-                    struct stat st;
-                    stat(_server.getErrorPages().at(i).second.c_str(), &st);
-                    fd_error = open(_server.getErrorPages().at(i).second.c_str(), O_RDONLY);
-                    std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: " + ft_toString(st.st_size);
-                    message += "\r\n\r\n";
-                    send(_ClientFD, message.c_str(), message.size(), 0);
-                    int len = read(fd_error, str, 10000);
-                    send(_ClientFD, str, len, 0);
-                    done = 1;
-                    return 0;
-                }
-            }
+            std::cout << RED << "Response 400 >Bad Request " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+            std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n";
+            message += "<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return 0;
         }
-        std::cout << RED << "Response 400 >Bad Request " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-        std::string message = (char *)"HTTP/1.1 400 \r\nConnection: close\r\nContent-Length: 75\r\n\r\n";
-        message += "<!DOCTYPE html><head><title>Bad Request</title></head><body> </body></html>";
+    }
+    return 1;
+}
+int Response::handle_redirection(fd_set &r, fd_set &w)
+{
+    Path = delete_space((_request.Getrequest().at("Path")));
+    if (!locations.getRedirection().second.empty())
+    {
+        std::cout << YELLOW << "Response 302 Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+        std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
+        message += locations.getRedirection().second;
+        message += "\r\nContent-Length: 0\r\n\r\n";
         send(_ClientFD, message.c_str(), message.size(), 0);
         FD_CLR(_ClientFD, &w);
         FD_SET(_ClientFD, &r);
@@ -167,92 +212,49 @@ int Response::is_Valide(fd_set &r, fd_set &w)
     }
     return 1;
 }
-int Response::handle_redirection(fd_set &r, fd_set &w)
-{
-    Path = delete_space((_request.Getrequest().at("Path")));
-    for (int a = 0; a < (int)_server.getLocations().size(); a++)
-    {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
-        {
-            if (!_server.getLocations().at(a).getRedirection().second.empty())
-            {
-                std::cout << YELLOW << "Response 302 Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-                std::string message = (char *)"HTTP/1.1 302 Found\r\nLocation: ";
-                message += _server.getLocations().at(a).getRedirection().second;
-                message += "\r\nContent-Length: 0\r\n\r\n";
-                send(_ClientFD, message.c_str(), message.size(), 0);
-                FD_CLR(_ClientFD, &w);
-                FD_SET(_ClientFD, &r);
-                done = 1;
-                return 0;
-            }
-            else
-                return 1;
-        }
-    }
-    return 1;
-}
 
 int Response::handle_method(fd_set &r, fd_set &w)
 {
     Path = delete_space((_request.Getrequest().at("Path")));
-    for (int a = 0; a < (int)_server.getLocations().size(); a++)
+    if ((int)Path.find(locations.getLocationPath()) != -1)
     {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
+        if (!locations.getClientMaxBodySize().empty())
+            lent_server = strtoull(locations.getClientMaxBodySize().c_str(), NULL, 10);
+        else
+            lent_server = -1;
+        for (int i = 0; i < (int)locations.getAllowedMethods().size(); i++)
+            if (delete_space(locations.getAllowedMethods().at(i)) == delete_space(_request.Getrequest().at("Method")))
+                return 1;
+        if (_request.Getrequest().at("Method") == "POST")
         {
-            if (!_server.getLocations().at(a).getClientMaxBodySize().empty())
-                lent_server = strtoull(_server.getLocations().at(a).getClientMaxBodySize().c_str(), NULL, 10);
-            else
-                lent_server = -1;
-            for (int i = 0; i < (int)_server.getLocations().at(a).getAllowedMethods().size(); i++)
-                if (delete_space(_server.getLocations().at(a).getAllowedMethods().at(i)) == delete_space(_request.Getrequest().at("Method")))
-                    return 1;
-            if (_request.Getrequest().at("Method") == "POST")
-            {
-                if (access(_request.get_tmp().c_str(), F_OK) != -1)
-                    remove(_request.get_tmp().c_str());
-            }
-            if (send_error("405"," Method Not Allowed "))
-            {
-                std::cout << RED << "Response 405 Method Not Allowed " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-                std::string message = (char *)"HTTP/1.1 405 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n";
-                message += "<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
-                send(_ClientFD, message.c_str(), message.size(), 0);
-                FD_CLR(_ClientFD, &w);
-                FD_SET(_ClientFD, &r);
-                done = 1;
-            }
-            return 0;
+            if (access(_request.get_tmp().c_str(), F_OK) != -1)
+                remove(_request.get_tmp().c_str());
         }
+        if (send_error("405"," Method Not Allowed "))
+        {
+            std::cout << RED << "Response 405 Method Not Allowed " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+            std::string message = (char *)"HTTP/1.1 405 \r\nConnection: close\r\nContent-Length: 82\r\n\r\n";
+            message += "<!DOCTYPE html><head><title>Method Not Allowed</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+        }
+        return 0;
     }
     return 1;
 }
 int Response::handle_index()
 {
-    std::string str = Path;
-    for (int a = 0; a < (int)_server.getLocations().size(); a++)
+    struct stat s;
+    stat(full_path.c_str(), &s);
+    if ((access((const char *)full_path.c_str(), F_OK) != -1) && !S_ISDIR(s.st_mode))
+        return 1;
+    for (int i = 0; i < (int)locations.getIndex().size(); i++)
     {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
-        {
-            std::string tmp = Path;
-            tmp.replace(Path.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), root);
-            char res[1024];
-            Path = tmp;
-            realpath((char *)Path.c_str(), res);
-            full_path = res;
-            struct stat s;
-            stat(full_path.c_str(), &s);
-            if ((access((const char *)full_path.c_str(), F_OK) != -1) && !S_ISDIR(s.st_mode))
-                return 1;
-            for (int i = 0; i < (int)_server.getLocations()[a].getIndex().size(); i++)
-            {
-                full_path += "/" +  _server.getLocations()[a].getIndex().at(i);
-                if (access((const char *)full_path.c_str(), F_OK) != -1)
-                    return 1;
-            }
-            Path = str;
-            return 0;
-        }
+        full_path += "/" +  locations.getIndex().at(i);
+        if (access((const char *)full_path.c_str(), F_OK) != -1)
+            return 1;
     }
     return 0;
 }
@@ -294,24 +296,19 @@ int Response::is_Unauthorize(fd_set &r, fd_set &w)
 
 int Response::redirect_path(fd_set &r, fd_set &w)
 {
-    char res[1024];
     struct stat s;
-    realpath((char *)red.c_str(), res);
-    stat(res,&s);
-    for (int a = 0; a < (int)_server.getLocations().size(); a++)
+    stat(full_path.c_str(),&s);
+    if (((access(full_path.c_str(),F_OK) != -1 && S_ISDIR(s.st_mode))  && Path != "/" && Path[Path.length() - 1] != '/'))
     {
-        if ((access(res,F_OK) != -1 && S_ISDIR(s.st_mode)) && ((Path == _server.getLocations().at(a).getLocationPath() && Path != "/") || ((int)Path.find(".") == -1 && Path[Path.length() - 1] != '/')))
-        {
-            std::cout << YELLOW << "Response 301 Moved Permanently " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-            std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
-            message += Path + "/";
-            message += "\r\nContent-Length: 0\r\n\r\n";
-            send(_ClientFD, message.c_str(), message.size(), 0);
-            FD_CLR(_ClientFD, &w);
-            FD_SET(_ClientFD, &r);
-            done = 1;
-            return 0;
-        }
+        std::cout << YELLOW << "Response 301 Moved Permanently " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+        std::string message = (char *)"HTTP/1.1 301 Moved Permanently\r\nLocation: ";
+        message += Path + "/";
+        message += "\r\nContent-Length: 0\r\n\r\n";
+        send(_ClientFD, message.c_str(), message.size(), 0);
+        FD_CLR(_ClientFD, &w);
+        FD_SET(_ClientFD, &r);
+        done = 1;
+        return 0;
     }
     return 1;
 }
@@ -356,64 +353,57 @@ void Response::send_data(fd_set &r, fd_set &w)
         }
     }
 }
-
+int Response::check_forbidden(fd_set &r , fd_set &w)
+{
+    struct stat s;
+    stat(full_path.c_str(),&s);
+    if ((access(full_path.c_str(),F_OK) != -1 && access(full_path.c_str(),R_OK) == -1))
+    {
+        if(send_error("403", " Forbidden "))
+        {
+            std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+            std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73";
+            message += "\r\n\r\n<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+            return 0;
+        }
+        return 0;
+    }
+    return 1;
+}
 int Response::handle_autoindex(fd_set &r, fd_set &w)
 {
-    // srand(time(0));
-    // int n = rand() % 10;
     std::ofstream file;
-    for (int a = 0; a < (int)_server.getLocations().size(); a++)
+    if (locations.getAutoIndex() == "on")
     {
-        if ((int)Path.find(_server.getLocations().at(a).getLocationPath()) != -1)
+        std::string tmp = full_path;
+        struct stat s;
+        stat(full_path.c_str(),&s);
+        if ((access((const char *)full_path.c_str(), F_OK) != -1) && !S_ISDIR(s.st_mode))
+            return 1;
+        if (S_ISDIR(s.st_mode))
         {
-
-            if (_server.getLocations().at(a).getAutoIndex() == "on")
-            {
-                std::string tmp = Path;
-                tmp.replace(Path.find(_server.getLocations().at(a).getLocationPath()), _server.getLocations().at(a).getLocationPath().length(), root);
-                char res[1024];
-                Path = tmp;
-                struct stat s;
-                realpath((char *)Path.c_str(), res);
-                Path = res;
-                stat(Path.c_str(), &s);
-                if ((access((const char *)Path.c_str(), F_OK) != -1) && !S_ISDIR(s.st_mode))
-                {
-                    full_path = Path;
-                    return 1;
-                }
-                if (S_ISDIR(s.st_mode))
-                {
-                    full_path = "www/autoindex/e.html";
-                    file.open(full_path);
-                    file.clear();
-                    file << generate_autoindex(Path);
-                    file.close();
-                    return 1;
-                }
-                else if (send_error("404", " Not Found "))
-                {
-                    std::cout << RED << "Response 404 Not Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-                    std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
-                    message += "\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
-                    send(_ClientFD, message.c_str(), message.size(), 0);
-                    FD_CLR(_ClientFD, &w);
-                    FD_SET(_ClientFD, &r);
-                    done = 1;
-                }
-            }
-            else if (send_error("403"," Forbidden "))
-            {
-                std::cout << RED << "Response 403 Forbidden " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
-                std::string message = (char *)"HTTP/1.1 403 \r\nConnection: close\r\nContent-Length: 73\r\n\r\n";
-                message += "<!DOCTYPE html><head><title>Forbidden</title></head><body> </body></html>";
-                send(_ClientFD, message.c_str(), message.size(), 0);
-                FD_CLR(_ClientFD, &w);
-                FD_SET(_ClientFD, &r);
-                done = 1;
-            }
+            full_path = "www/autoindex/e.html";
+            file.open(full_path);
+            file.clear();
+            file << generate_autoindex(tmp);
+            file.close();
+            return 1;
         }
-    } 
+    }
+    if (send_error("404", " Not Found "))
+    {
+            std::cout << RED << "Response 404 Not Found " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
+            std::string message = (char *)"HTTP/1.1 404 \r\nConnection: close\r\nContent-Length: 73";
+            message += "\r\n\r\n<!DOCTYPE html><head><title>Not Found</title></head><body> </body></html>";
+            send(_ClientFD, message.c_str(), message.size(), 0);
+            FD_CLR(_ClientFD, &w);
+            FD_SET(_ClientFD, &r);
+            done = 1;
+    }
     return 0;
 }
 int Response::check_upload(fd_set &r, fd_set &w)
@@ -453,12 +443,7 @@ int Response::last_slash()
 
 void Response::write_body(fd_set &r, fd_set &w)
 {
-    // char reso[1024];
-    // char old_reso[1024];
-    // realpath(upload.c_str(), reso);
-    // realpath(_request.get_tmp().c_str(), old_reso);
-    // std::cout<<"reso :" << reso << std::endl;
-    // std::cout<<"old_reso : " << old_reso << std::endl;
+ 
     std::cout << GREEN << "Response 201 Created " << trim(_request.Getrequest()["Path"]) << " " << trim(_request.Getrequest()["Version"]) << RESET << std::endl;
     rename(_request.get_tmp().c_str(), upload.c_str());
     std::string message = (char *)"HTTP/1.1 201 Created\r\nLocation: ";
@@ -782,26 +767,21 @@ int Response::handler(fd_set &r, fd_set &w)
                         if (delete_space(_request.Getrequest().at("Method")) == "POST")
                         {
                             if (check_upload(r, w))
-                            {
                                 if (check_lent(r, w))
-                                {
                                     if (isToo_large(r, w))
                                         write_body(r, w);
-                                }
-                            }
                         }
                         else if (delete_space(_request.Getrequest().at("Method")) == "DELETE")
                         {
                             if (check_Content(r, w))
-                            {
                                 if (check_permission(r, w))
                                     handler_delete(r, w);
-                            }
                         }
                         else if (ok || redirect_path(r, w))
                         {
-                            if (ok || handle_index() || handle_autoindex(r, w))
-                                send_data(r, w);
+                            if (ok || check_forbidden(r,w))
+                                if(ok || handle_index() ||  handle_autoindex(r, w))
+                                    send_data(r, w);
                         }
                     }
                 }

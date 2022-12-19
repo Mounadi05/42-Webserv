@@ -21,7 +21,6 @@ class Response
         int done;
         std::string Path;
         std::string full_path;
-        std::string root;
         int en_handle;
         int post;
         std::string upload;
@@ -30,6 +29,7 @@ class Response
          int fd_error;
          int error;
          std::string status_code;
+         Location locations;
      public:
         Response();
         Response(Request request,Server  server, int ClientFD);
@@ -66,7 +66,7 @@ class Response
         std::vector<std::string> _env;
         void load_env(char **env);
         int send_error(std::string error, std::string m);
-        std::string red;
+        int check_forbidden(fd_set &r , fd_set &w);
 };
 
 #endif
